@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "MovieCollection.C": "cpp",
+        "stdio.h": "c",
+        "cliutils.h": "c",
+        "cstdio": "c",
+        "stdint.h": "c",
+        "string.h": "c",
+        "type_traits": "cpp",
+        "typeinfo": "cpp"
+    }
+}

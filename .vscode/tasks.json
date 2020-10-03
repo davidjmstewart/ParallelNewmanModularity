@@ -1,0 +1,48 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Library Build",
+      "type": "shell",
+      "command": "gcc",
+      "args": [
+        "-o",
+        "CDUtils.o",
+        "-c",
+        "CDUtils.c",
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/lib"
+      }
+    },
+    {
+      "label": "Application Build",
+      "type": "shell",
+      "command": "gcc",
+      "args": [
+        "-fopenmp",
+        "-g",
+        "main.c",
+        "-o",
+        "main",
+        "./lib/CDUtils.o",
+        "-lm",
+        "-Wall",
+        "-Werror",
+        "-Wpedantic",
+        "-Waggressive-loop-optimizations"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Build",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Library Build",
+        "Application Build"
+      ]
+    }
+  ]
+}
