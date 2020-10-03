@@ -10,6 +10,12 @@
         "CDUtils.o",
         "-c",
         "CDUtils.c",
+        "-g",
+        "-fopenmp",
+        "-Wall",
+        "-Werror",
+        "-Wpedantic",
+        "-Waggressive-loop-optimizations"
       ],
       "options": {
         "cwd": "${workspaceFolder}/lib"
