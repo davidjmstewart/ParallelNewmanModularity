@@ -107,7 +107,6 @@ double dotProduct(double *A, double *x, unsigned long size)
     #pragma omp parallel for private(i)
     for (i = 0; i < size; i++)
     {
-        // printf("%d threads\n", omp_get_num_threads());
         sum += A[i] * x[i];
     }
     return sum;
@@ -150,7 +149,6 @@ void matrixToFile(double *A, unsigned long size, enum OutputType outputType) {
 
             for (int j = 0; j < size; j++)
             {
-                // fwrite(&A[i * size + j], sizeof(double), 1, fp); /* Write to File */
                 fprintf(fp, "%0.9f", A[i * size + j]);
                 if (j != size - 1)
                 {
@@ -229,38 +227,9 @@ double* powerIteration(double *B, unsigned long size, int numThreads, double tol
     }
 
     double eigenValue = 0;
-    ;
     double prevEigenValue = __INT_MAX__;
-
-    //     eigenVector[0] = 1;
-    // eigenVector[1] = 1;
-    // eigenVector[2] = 1;
-    // eigenVector[3] = 1;
-    // eigenVector[4] = 1;
-
-    // eigenVectorTmp[0] = 1;
-    // eigenVectorTmp[1] = 1;
-    // eigenVectorTmp[2] = 1;
-    // eigenVectorTmp[3] = 1;
-    // eigenVectorTmp[4] = 1;
-
     double norm = 0;
-    /*
-    for (int k = 0; k < size; k++)
-    {
-        norm += eigenVector[k] * eigenVector[k];
-    }
 
-    norm = sqrt(norm);
-
-    for (int k = 0; k < size; k++)
-    {
-        eigenVectorTmp[k] = eigenVector[k] / norm;
-    }
-    */
-    // double *eigenVectorTmp = (double *)malloc(size * sizeof(double));
-    // double *eigenVector = (double *)malloc(size * sizeof(double));
-    // genRandMembershipVector(eigenVectorTmp, size);
     omp_set_num_threads(numThreads);
     bool converged = false;
     int numIterations = 0;
@@ -287,12 +256,6 @@ double* powerIteration(double *B, unsigned long size, int numThreads, double tol
         #pragma omp parallel for private(k) reduction(+:norm)
         for (k = 0; k < size; k++)
         {
-            
-            // if (fabs(eigenVector[k]) > max)
-            // {
-            //     max = (eigenVector[k]);
-            // }
-
              norm += eigenVector[k] * eigenVector[k];
         }
         #pragma omp parallel for private(k)
@@ -310,8 +273,6 @@ double* powerIteration(double *B, unsigned long size, int numThreads, double tol
 
         prevEigenValue = eigenValue;
         numIterations++;
-        // double eigenValue = rayleighQuotient(B, eigenVector, size);
-        // printf("eigenvalue is %f\n", eigenValue);
     }
     // double eigenValue = rayleighQuotient(B, eigenVector, size);
 
@@ -335,7 +296,5 @@ double* powerIteration(double *B, unsigned long size, int numThreads, double tol
         printf("eigenvalue is %f\n", eigenValue);
         return eigenVector;
     }
-    
-
     return eigenVector;
 }
