@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <omp.h>
 #include <time.h>
+#include <math.h>
+#include <stdbool.h>
 
 #include "./CDUTils.h"
 
@@ -23,6 +25,19 @@ void genAdjacenyMatrix(int *A, unsigned long size) {
                 A[i * size + j] = 0;
             }
         }
+    }
+}
+
+void genRandMembershipVector(double *S, unsigned long size)
+{
+    srand(time(0));
+    unsigned long i;
+    #pragma omp parallel for private(i)
+    for ( i = 0; i < size; i++)
+    {
+        double n = rand() % 2;
+        n = (n == 0 ? -1 : 1);
+        S[i] = n;
     }
 }
 
@@ -50,7 +65,6 @@ void createDegreesVec(int *A, int *D, unsigned long size, int numThreads)
 
 void createModularityMatrix(double *B, int *A, int *D, unsigned long size, int numThreads)
 {
-    printf("creating!\n");
     unsigned long i, j;
     int m = graphDegree(D, size)/2;
 
@@ -82,4 +96,246 @@ int graphDegree(int *D, unsigned long size) {
         total += D[i];
     }
     return total;
+}
+
+// todo: parallelise
+double dotProduct(double *A, double *x, unsigned long size)
+{
+    // double *y = (double *)malloc(size * sizeof(double));
+    double sum = 0;
+    int i;
+    #pragma omp parallel for private(i)
+    for (i = 0; i < size; i++)
+    {
+        // printf("%d threads\n", omp_get_num_threads());
+        sum += A[i] * x[i];
+    }
+    return sum;
+}
+
+double rayleighQuotient(double * B, double * eigenVector, unsigned long size){
+    double e = 0;
+    double *By = (double *)malloc(size * sizeof(double));
+    int i, j;
+
+    for (i = 0; i < size; i++)
+    {
+        double *BHead = &B[i * size];
+        double tmp = 0;
+
+        for (j = 0; j < size; j++)
+        {
+            tmp += BHead[j] * eigenVector[j];
+        }
+        By[i] = tmp;
+    }
+
+
+    e = dotProduct(By, eigenVector, size) / dotProduct(eigenVector, eigenVector, size);
+
+    return e;
+}
+
+
+void matrixToFile(double *A, unsigned long size, enum OutputType outputType) {
+    FILE *fp;
+
+    if (outputType == Python){
+        fp = fopen("./py-mat.txt", "w");
+        fwrite("[\n", sizeof(char), 1, fp);
+
+        for (int i = 0; i < size; i++)
+        {
+            fwrite("[", sizeof(char), 1, fp);
+
+            for (int j = 0; j < size; j++)
+            {
+                // fwrite(&A[i * size + j], sizeof(double), 1, fp); /* Write to File */
+                fprintf(fp, "%0.9f", A[i * size + j]);
+                if (j != size - 1)
+                {
+                    fwrite(", ", sizeof(char), 2, fp);
+                }
+            }
+            fwrite("],\n", sizeof(char), 3, fp);
+        }
+        fwrite("]\n", sizeof(char), 1, fp);
+    }
+    else if (outputType == MATLAB)
+    {
+        fp = fopen("./matlab-mat.txt", "w");
+
+        for (int i = 0; i < size; i++)
+        {
+
+            for (int j = 0; j < size; j++)
+            {
+                // fwrite(&A[i * size + j], sizeof(double), 1, fp); /* Write to File */
+                fprintf(fp, "%0.9f", A[i * size + j]);
+                if (j != size - 1){
+                    fwrite(" ", sizeof(char), 1, fp);
+                }
+
+            }
+            fwrite("\n", sizeof(char), 1, fp);
+        }
+    }
+
+    fclose(fp);
+}
+
+void membershipVectorToFile(double *S, unsigned long size, enum OutputType outputType)
+{
+    FILE *fp;
+
+    if (outputType == Python)
+    {
+        fp = fopen("./benchmarking/python_testing_files/py-membershipvec.txt", "w");
+        for (int i = 0; i < size; i++)
+        {
+            int output = 1;
+            if (S[i] < 0){
+                output = -1;
+            }
+            fprintf(fp, "%d\n", output);
+        }
+    }
+    else if (outputType == MATLAB)
+    {
+        fp = fopen("./benchmarking/matlab_testing_files/matlab-membershipvec.txt", "w");
+
+        for (int i = 0; i < size; i++)
+        {
+            int output = 1;
+            if (S[i] < 0)
+            {
+                output = -1;
+            }
+            fprintf(fp, "%d\n", output);
+        }
+    }
+
+    fclose(fp);
+}
+
+double* powerIteration(double *B, unsigned long size, int numThreads, double tolerance, int iterationLimit)
+{
+    double *eigenVectorTmp = (double *)malloc(size * sizeof(double));
+    double *eigenVector = (double *)malloc(size * sizeof(double));
+
+    genRandMembershipVector(eigenVectorTmp, size);
+    for (int i = 0; i < size; i++){
+        eigenVector[i] = eigenVectorTmp[i];
+    }
+
+    double eigenValue = 0;
+    ;
+    double prevEigenValue = __INT_MAX__;
+
+    //     eigenVector[0] = 1;
+    // eigenVector[1] = 1;
+    // eigenVector[2] = 1;
+    // eigenVector[3] = 1;
+    // eigenVector[4] = 1;
+
+    // eigenVectorTmp[0] = 1;
+    // eigenVectorTmp[1] = 1;
+    // eigenVectorTmp[2] = 1;
+    // eigenVectorTmp[3] = 1;
+    // eigenVectorTmp[4] = 1;
+
+    double norm = 0;
+    /*
+    for (int k = 0; k < size; k++)
+    {
+        norm += eigenVector[k] * eigenVector[k];
+    }
+
+    norm = sqrt(norm);
+
+    for (int k = 0; k < size; k++)
+    {
+        eigenVectorTmp[k] = eigenVector[k] / norm;
+    }
+    */
+    // double *eigenVectorTmp = (double *)malloc(size * sizeof(double));
+    // double *eigenVector = (double *)malloc(size * sizeof(double));
+    // genRandMembershipVector(eigenVectorTmp, size);
+    omp_set_num_threads(numThreads);
+    bool converged = false;
+    int numIterations = 0;
+    while (!converged && numIterations < iterationLimit)
+    {
+
+        int i, j, k;
+        #pragma omp parallel for private(i, j, k)
+        for (i = 0; i < size; i++)
+        {
+            double *BHead = &B[i * size];
+            double tmp = 0;
+    
+            for (j = 0; j < size; j++)
+            {
+                tmp += BHead[j] * eigenVectorTmp[j];
+            }
+            eigenVector[i] = tmp;
+
+        }
+
+        norm = 0;
+        // double max = (eigenVector[0]);
+        #pragma omp parallel for private(k) reduction(+:norm)
+        for (k = 0; k < size; k++)
+        {
+            
+            // if (fabs(eigenVector[k]) > max)
+            // {
+            //     max = (eigenVector[k]);
+            // }
+
+             norm += eigenVector[k] * eigenVector[k];
+        }
+        #pragma omp parallel for private(k)
+        for (k = 0; k < size; k++)
+        {
+            eigenVectorTmp[k] = eigenVector[k] / sqrt(norm);
+        }
+        eigenValue = rayleighQuotient(B, eigenVector, size);
+        double diff = fabs(eigenValue - prevEigenValue);
+        if (diff < tolerance)
+        {
+            printf("converged after %d iterations \n", numIterations);
+            converged = true;
+        }
+
+        prevEigenValue = eigenValue;
+        numIterations++;
+        // double eigenValue = rayleighQuotient(B, eigenVector, size);
+        // printf("eigenvalue is %f\n", eigenValue);
+    }
+    // double eigenValue = rayleighQuotient(B, eigenVector, size);
+
+    // N.B. This is not part of the typical power iteration algorithm
+    // this is specifically for our purposes of finding the eigenvector
+    // corresponding to the most positive eigenvalue. If the eigenvalue is negative we need
+    // to perform a spectral shift and repeat the process one more time
+    // see these threads:
+    //     * https://math.stackexchange.com/questions/835450/efficient-method-for-determining-to-the-most-positive-eigenvalue-of-a-matrix
+    //     * https://math.stackexchange.com/questions/906563/finding-eigenvectors-for-the-largest-eigenvalue-vs-one-with-the-largest-absolute
+
+    
+    if (eigenValue < 0) {
+        for (int i = 0; i < size; i++){
+            B[i * size + i] += fabs(eigenValue);
+        }
+        free(eigenVectorTmp);
+        free(eigenVector);
+        return powerIteration(B, size, numThreads, tolerance, iterationLimit);
+    } else {
+        printf("eigenvalue is %f\n", eigenValue);
+        return eigenVector;
+    }
+    
+
+    return eigenVector;
 }

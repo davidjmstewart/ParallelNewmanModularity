@@ -15,7 +15,7 @@
         "-Wall",
         "-Werror",
         "-Wpedantic",
-        "-Waggressive-loop-optimizations"
+        "-Waggressive-loop-optimizations",
       ],
       "options": {
         "cwd": "${workspaceFolder}/lib"
