@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        
         {
             "name": "(gdb) Launch",
             "type": "cppdbg",
@@ -23,6 +24,46 @@
                 }
             ],
             "preLaunchTask": "Build"
-        }
-    ]
+        },
+        {
+            "name": "(gdb) Dot Product (Benchmark)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/benchmarking/dot_product/dot",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "BuildDotProductBenchmark"
+        },
+        {
+            "name": "(gdb) Matrix-Vector Multiplication (Benchmark)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/benchmarking/matrix_vector_multiplication/mvm",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "BuildMvmBenchmark"
+        },        
+]
 }

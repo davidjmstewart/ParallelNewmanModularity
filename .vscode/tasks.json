@@ -36,13 +36,57 @@
         "-Wall",
         "-Werror",
         "-Wpedantic",
-        "-Waggressive-loop-optimizations"
+        "-Waggressive-loop-optimizations",
       ],
       "options": {
         "cwd": "${workspaceFolder}"
       }
     },
-    {
+        {
+          "label": "BuildDotProductBenchmark",
+          "type": "shell",
+          "command": "gcc",
+          "args": [
+            "-fopenmp",
+            "-g",
+            "./benchmarking/dot_product/dot_product_benchmarking.c",
+            "-o",
+            "./benchmarking/dot_product/dot",
+            "./lib/CDUtils.o",
+            "-lm",
+            "-Wall",
+            "-Wpedantic",
+            "-Waggressive-loop-optimizations",
+            "-O3"
+          ],
+          "options": {
+            "cwd": "${workspaceFolder}"
+          }
+        },
+        {
+          "label": "BuildMvmBenchmark",
+          "type": "shell",
+          "command": "gcc",
+          "args": [
+            "-fopenmp",
+            "-g",
+            "./benchmarking/matrix_vector_multiplication/mvm_benchmarking.c",
+            "-o",
+            "./benchmarking/matrix_vector_multiplication/mvm",
+            "./lib/CDUtils.o",
+            "-lm",
+            "-Wall",
+            "-Wpedantic",
+            "-Waggressive-loop-optimizations",
+            "-O3",
+            "-march=native",
+            "-fopt-info-vec-all",
+          ],
+          "options": {
+            "cwd": "${workspaceFolder}"
+          }
+        },
+{
       "label": "Build",
       "dependsOrder": "sequence",
       "dependsOn": [

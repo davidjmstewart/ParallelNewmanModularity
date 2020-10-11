@@ -104,7 +104,7 @@ double dotProduct(double *A, double *x, unsigned long size)
     // double *y = (double *)malloc(size * sizeof(double));
     double sum = 0;
     int i;
-    #pragma omp parallel for private(i)
+
     for (i = 0; i < size; i++)
     {
         sum += A[i] * x[i];
@@ -116,7 +116,7 @@ double rayleighQuotient(double * B, double * eigenVector, unsigned long size){
     double e = 0;
     double *By = (double *)malloc(size * sizeof(double));
     int i, j;
-
+    #pragma omp parallel for private(i, j)
     for (i = 0; i < size; i++)
     {
         double *BHead = &B[i * size];
@@ -137,10 +137,11 @@ double rayleighQuotient(double * B, double * eigenVector, unsigned long size){
 
 
 void matrixToFile(double *A, unsigned long size, enum OutputType outputType) {
-    FILE *fp;
-
-    if (outputType == Python){
-        fp = fopen("./py-mat.txt", "w");
+    
+    if (outputType == Python)
+    {
+        FILE *fp = NULL;
+        fp = fopen("./benchmarking/python_testing_files/py-mat.txt", "w");
         fwrite("[\n", sizeof(char), 1, fp);
 
         for (int i = 0; i < size; i++)
@@ -158,10 +159,12 @@ void matrixToFile(double *A, unsigned long size, enum OutputType outputType) {
             fwrite("],\n", sizeof(char), 3, fp);
         }
         fwrite("]\n", sizeof(char), 1, fp);
+        fclose(fp);
     }
     else if (outputType == MATLAB)
     {
-        fp = fopen("./matlab-mat.txt", "w");
+        FILE *fp = NULL;
+        fp = fopen("./benchmarking/matlab_testing_files/matlab-mat.txt", "w");
 
         for (int i = 0; i < size; i++)
         {
@@ -177,17 +180,18 @@ void matrixToFile(double *A, unsigned long size, enum OutputType outputType) {
             }
             fwrite("\n", sizeof(char), 1, fp);
         }
+        fclose(fp);
     }
 
-    fclose(fp);
 }
 
 void membershipVectorToFile(double *S, unsigned long size, enum OutputType outputType)
 {
-    FILE *fp;
+
 
     if (outputType == Python)
     {
+        FILE *fp;
         fp = fopen("./benchmarking/python_testing_files/py-membershipvec.txt", "w");
         for (int i = 0; i < size; i++)
         {
@@ -197,9 +201,11 @@ void membershipVectorToFile(double *S, unsigned long size, enum OutputType outpu
             }
             fprintf(fp, "%d\n", output);
         }
+        fclose(fp);
     }
     else if (outputType == MATLAB)
     {
+        FILE *fp;
         fp = fopen("./benchmarking/matlab_testing_files/matlab-membershipvec.txt", "w");
 
         for (int i = 0; i < size; i++)
@@ -211,9 +217,9 @@ void membershipVectorToFile(double *S, unsigned long size, enum OutputType outpu
             }
             fprintf(fp, "%d\n", output);
         }
+        fclose(fp);
     }
 
-    fclose(fp);
 }
 
 double* powerIteration(double *B, unsigned long size, int numThreads, double tolerance, int iterationLimit)
@@ -237,7 +243,7 @@ double* powerIteration(double *B, unsigned long size, int numThreads, double tol
     {
 
         int i, j, k;
-        #pragma omp parallel for private(i, j, k)
+        #pragma omp parallel for private(j)
         for (i = 0; i < size; i++)
         {
             double *BHead = &B[i * size];

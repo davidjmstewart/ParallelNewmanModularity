@@ -8,6 +8,10 @@
         "string.h": "c",
         "type_traits": "cpp",
         "typeinfo": "cpp",
-        "cmath": "c"
+        "cmath": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "utility": "c"
     }
 }

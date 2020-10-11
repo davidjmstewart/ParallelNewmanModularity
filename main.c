@@ -4,7 +4,7 @@
 
 #include "./lib/CDUTils.h"
 
-unsigned long const MATRIX_SIZE = 20;
+unsigned long const MATRIX_SIZE = 1000;
 const int NUM_THREADS = 16;
 long double elapsed;
 struct timespec start, finish;
