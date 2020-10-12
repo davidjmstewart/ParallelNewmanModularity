@@ -29,4 +29,6 @@ double *powerIteration(double *B, unsigned long size, int numThreads, double tol
 void matrixToFile(double *A, unsigned long size, enum OutputType outputType);
 void membershipVectorToFile(double *S, unsigned long size, enum OutputType outputType);
 
+void matVectMultiply(double *restrict A, double *restrict V, double *restrict results, unsigned long matrixSize, int numThreads);
+
 #endif /* CDUTILS_H */

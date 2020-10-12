@@ -16,6 +16,8 @@
         "-Werror",
         "-Wpedantic",
         "-Waggressive-loop-optimizations",
+        "-O3",
+        "-march=native"
       ],
       "options": {
         "cwd": "${workspaceFolder}/lib"
@@ -37,6 +39,8 @@
         "-Werror",
         "-Wpedantic",
         "-Waggressive-loop-optimizations",
+          "-O3",
+          "-march=native"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
@@ -80,7 +84,9 @@
             "-Waggressive-loop-optimizations",
             "-O3",
             "-march=native",
-            "-fopt-info-vec-all",
+            "-funroll-loops",
+            
+            // "-fopt-info-vec-all",
           ],
           "options": {
             "cwd": "${workspaceFolder}"

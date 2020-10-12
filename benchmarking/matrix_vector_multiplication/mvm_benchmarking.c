@@ -1,5 +1,7 @@
 #include <time.h>
 #include <stdio.h>
+#include <math.h>
+
 #include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
@@ -10,7 +12,7 @@
 #define T 1
 #define THREAD_RANGE 16 // Run for 1:THREAD_RANGE threads
 #define NUM_AVERAGES 10 // take the average of 5 timings for each matrix size, and each number of threads
-#define NUM_MATRIX_SIZES 8
+#define NUM_MATRIX_SIZES 6
 // unsigned long matrixSizes[NUM_MATRIX_SIZES] = {51200};
 
 unsigned long matrixSizes[NUM_MATRIX_SIZES] = { 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200 };
@@ -45,24 +47,32 @@ void doSequentialComputation(double *A, double *V, double *results, unsigned lon
 
 void doParallelComputation(double *restrict A, double *restrict V, double *restrict results, unsigned long matrixSize, int numThreads)
 {
-    omp_set_num_threads(numThreads);
-    unsigned long i, j;
-
-    #pragma omp parallel for private(j)
-    for (i = 0; i < matrixSize; i++)
+    omp_set_num_threads
+    const int BLOCK_SIZE = 20;
+    int i, j, x, y;
+    int n = matrixSize;
+    #pragma omp parallel for private(j, x, y)
+    for (i = 0; i < n; i += BLOCK_SIZE)
     {
-        double tmp = 0;
-        // TODO: unroll outer loop and cache-block it.
-        #pragma omp simd reduction(+:tmp)
-        for (j = 0; j < matrixSize / 4 * 4; j+=4)
+        for (int nn = 0; nn < BLOCK_SIZE; nn++)
         {
-            tmp += A[i * matrixSize + j]     * V[j]; 
-            tmp += A[i * matrixSize + j + 1] * V[j + 1];
-            tmp += A[i * matrixSize + j + 2] * V[j + 2];
-            tmp += A[i * matrixSize + j + 3] * V[j + 3];
+            results[i + nn] = 0;
         }
-        results[i] = tmp; // write-only to results, not adding to old value.
+
+        for (j = 0; j < n; j += BLOCK_SIZE)
+        {
+
+            for (x = i; x < fmin(i + BLOCK_SIZE, n); x++)
+            {
+                #pragma omp simd
+                for (y = j; y < (int)fmin(j + BLOCK_SIZE, n); y++)
+                {
+                    results[x] += A[x*matrixSize + y] * V[y];
+                }
+            }
+        }
     }
+    
 }
 void genRandVector(double *S, unsigned long size)
 {

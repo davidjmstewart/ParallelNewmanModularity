@@ -8,7 +8,7 @@
 #include "./CDUTils.h"
 
 // gcc -o CDUtils.o -c CDUtils.c
-
+// Output assembly: gcc -fopenmp -O3 -march=native -S CDUtils.c
 // Generates a size x size adjacency matrix in a flat structure
 // INDEXING EXAMPLE
 // If size is 5, the 3rd row, 4th column of A would be A[2*size + 3]
@@ -115,7 +115,11 @@ double dotProduct(double *A, double *x, unsigned long size)
 double rayleighQuotient(double * B, double * eigenVector, unsigned long size){
     double e = 0;
     double *By = (double *)malloc(size * sizeof(double));
-    int i, j;
+    // int i, j;
+
+    matVectMultiply(B, eigenVector, By, size, 2);
+
+    /*
     #pragma omp parallel for private(i, j)
     for (i = 0; i < size; i++)
     {
@@ -128,7 +132,7 @@ double rayleighQuotient(double * B, double * eigenVector, unsigned long size){
         }
         By[i] = tmp;
     }
-
+    */
 
     e = dotProduct(By, eigenVector, size) / dotProduct(eigenVector, eigenVector, size);
 
@@ -222,6 +226,29 @@ void membershipVectorToFile(double *S, unsigned long size, enum OutputType outpu
 
 }
 
+void matVectMultiply(double *restrict A, double *restrict V, double *restrict results, unsigned long matrixSize, int numThreads)
+{
+    omp_set_num_threads(numThreads);
+    unsigned long i, j;
+
+    #pragma omp parallel for private(j)
+    for (i = 0; i < matrixSize; i++)
+    {
+        double tmp = 0;
+    // TODO: unroll outer loop and cache-block it.
+    #pragma omp simd reduction(+ \
+                           : tmp)
+        for (j = 0; j < matrixSize; j ++)
+        {
+            tmp += A[i * matrixSize + j] * V[j];
+            // tmp += A[i * matrixSize + j + 1] * V[j + 1];
+            // tmp += A[i * matrixSize + j + 2] * V[j + 2];
+            // tmp += A[i * matrixSize + j + 3] * V[j + 3];
+        }
+        results[i] = tmp; // write-only to results, not adding to old value.
+    }
+}
+
 double* powerIteration(double *B, unsigned long size, int numThreads, double tolerance, int iterationLimit)
 {
     double *eigenVectorTmp = (double *)malloc(size * sizeof(double));
@@ -242,6 +269,7 @@ double* powerIteration(double *B, unsigned long size, int numThreads, double tol
     while (!converged && numIterations < iterationLimit)
     {
 
+        /*
         int i, j, k;
         #pragma omp parallel for private(j)
         for (i = 0; i < size; i++)
@@ -256,6 +284,10 @@ double* powerIteration(double *B, unsigned long size, int numThreads, double tol
             eigenVector[i] = tmp;
 
         }
+    */
+        int k;
+
+        matVectMultiply(B, eigenVectorTmp, eigenVector, size, 2);
 
         norm = 0;
         // double max = (eigenVector[0]);
