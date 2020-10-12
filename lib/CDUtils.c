@@ -12,7 +12,7 @@
 // Generates a size x size adjacency matrix in a flat structure
 // INDEXING EXAMPLE
 // If size is 5, the 3rd row, 4th column of A would be A[2*size + 3]
-void genAdjacenyMatrix(int *A, unsigned long size) {
+void genAdjacencyMatrix(int *A, unsigned long size) {
     srand(time(0));
     for (unsigned long i = 0; i < size; i++) {
         for (unsigned long j = i; j < size; j++) {
@@ -63,6 +63,9 @@ void createDegreesVec(int *A, int *D, unsigned long size, int numThreads)
     }
 }
 
+// Computes equation 3 in the paper. B is the modularity matrix that will be filled
+// by this function, A is the symmetric adjacency matrix describing this graph
+// D is the degree vector where D[i] contains the degree of A[i, :]
 void createModularityMatrix(double *B, int *A, int *D, unsigned long size, int numThreads)
 {
     unsigned long i, j;
@@ -335,4 +338,12 @@ double* powerIteration(double *B, unsigned long size, int numThreads, double tol
         return eigenVector;
     }
     return eigenVector;
+}
+
+void assignCommunity(double *restrict B, int nextGroupNum) {
+
+}
+
+void computeSubgraphModularityMatrix(double *restrict B_g, double *restrict B, unsigned long size, int numThreads)
+{
 }

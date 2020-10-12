@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     }
 
     printf("Generating %lu x %lu adjacency matrix \n", MATRIX_SIZE, MATRIX_SIZE);
-    genAdjacenyMatrix(A, MATRIX_SIZE);
+    genAdjacencyMatrix(A, MATRIX_SIZE);
 
     printf("Creating degree vector \n");
     createDegreesVec(A, D, MATRIX_SIZE, NUM_THREADS);

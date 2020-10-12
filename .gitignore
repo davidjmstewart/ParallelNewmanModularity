@@ -8,6 +8,8 @@ mvm
 fib
 dotp
 *.exe
+sgmm
+membership_vector
 
 benchmarking/vectorisation/missed.txt
 eigVecTest.c

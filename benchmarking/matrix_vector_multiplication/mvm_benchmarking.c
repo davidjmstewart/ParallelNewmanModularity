@@ -47,7 +47,7 @@ void doSequentialComputation(double *A, double *V, double *results, unsigned lon
 
 void doParallelComputation(double *restrict A, double *restrict V, double *restrict results, unsigned long matrixSize, int numThreads)
 {
-    omp_set_num_threads
+    
     const int BLOCK_SIZE = 20;
     int i, j, x, y;
     int n = matrixSize;

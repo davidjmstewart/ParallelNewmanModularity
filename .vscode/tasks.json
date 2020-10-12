@@ -92,6 +92,54 @@
             "cwd": "${workspaceFolder}"
           }
         },
+        {
+          "label": "BuildSgmmBenchmark",
+          "type": "shell",
+          "command": "gcc",
+          "args": [
+            "-fopenmp",
+            "./lib/CDUtils.o",
+            "-g",
+            "./benchmarking/subgraph_modularity_matrix/sgmm_benchmarking.c",
+            "-o",
+            "./benchmarking/subgraph_modularity_matrix/sgmm",
+            "-lm",
+            "-Wall",
+            "-Wpedantic",
+            "-Waggressive-loop-optimizations",
+            "-O3",
+            "-march=native",
+            // "-funroll-loops",
+            // "-fopt-info-vec-all",
+          ],
+          "options": {
+            "cwd": "${workspaceFolder}"
+          }
+        },
+        {
+          "label": "BuildMembershipVectorBenchmark",
+          "type": "shell",
+          "command": "gcc",
+          "args": [
+            "-fopenmp",
+            "./lib/CDUtils.o",
+            "-g",
+            "./benchmarking/membership_vector/membership_vector_benchmarking.c",
+            "-o",
+            "./benchmarking/membership_vector/membership_vector",
+            "-lm",
+            "-Wall",
+            "-Wpedantic",
+            "-Waggressive-loop-optimizations",
+            "-O3",
+            "-march=native",
+            // "-funroll-loops",
+            // "-fopt-info-vec-all",
+          ],
+          "options": {
+            "cwd": "${workspaceFolder}"
+          }
+        },
 {
       "label": "Build",
       "dependsOrder": "sequence",
