@@ -4,7 +4,7 @@
 
 #include "./lib/CDUTils.h"
 
-unsigned long const MATRIX_SIZE = 10000;
+unsigned long const MATRIX_SIZE = 10;
 const int NUM_THREADS = 2;
 long double elapsed;
 struct timespec start, finish;
@@ -43,23 +43,26 @@ int main(int argc, char *argv[])
     printf("Creating modularity Matrix \n");
     createModularityMatrix(B, A, D, MATRIX_SIZE, NUM_THREADS);
     printf("Outputting matlab file\n");
-    // matrixToFile(B, MATRIX_SIZE, MATLAB);
+    matrixToFile(B, MATRIX_SIZE, MATLAB);
     // matrixToFile(B, MATRIX_SIZE, Python);
-
+    integerMatrixToFile(A, MATRIX_SIZE, MATLAB);
     printf("Performing power iteration \n");
     clock_gettime(CLOCK_MONOTONIC, &start);
-    eigenPair eigenPair = powerIteration(B, MATRIX_SIZE, NUM_THREADS, 0.00001, 5000);
+    // eigenPair eigenPair = powerIteration(B, MATRIX_SIZE, NUM_THREADS, 0.0000001, 5000);
     clock_gettime(CLOCK_MONOTONIC, &finish);
     elapsed = (finish.tv_sec - start.tv_sec);
     elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
     printf("elapsed: %.9Lf \n", elapsed);
-    printf("%0.9f\n", eigenPair.eigenvalue);
-    membershipVectorToFile(eigenPair.eigenvector, MATRIX_SIZE, MATLAB);
+    // printf("%0.9f\n", eigenPair.eigenvalue);
+    // membershipVectorToFile(eigenPair.eigenvector, MATRIX_SIZE, MATLAB);
     // membershipVectorToFile(eigenVector, MATRIX_SIZE, Python);
-
+    int *globalVertices = (int *)malloc(MATRIX_SIZE * sizeof(int)); // Store the subgraph modularity matrix computed in parallel
+    createGlobalVertices(globalVertices, MATRIX_SIZE, 4);
+    assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
     free(A);
     free(D);
     free(B);
+    free(globalVertices);
 
     return 0;
 }

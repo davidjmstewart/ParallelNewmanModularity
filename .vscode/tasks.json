@@ -16,8 +16,8 @@
         "-Werror",
         "-Wpedantic",
         "-Waggressive-loop-optimizations",
-        "-O3",
-        "-march=native"
+        // "-O3",
+        // "-march=native"
       ],
       "options": {
         "cwd": "${workspaceFolder}/lib"
@@ -39,8 +39,8 @@
         "-Werror",
         "-Wpedantic",
         "-Waggressive-loop-optimizations",
-          "-O3",
-          "-march=native"
+          // "-O3",
+          // "-march=native"
       ],
       "options": {
         "cwd": "${workspaceFolder}"

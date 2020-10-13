@@ -4,6 +4,7 @@
 #include <time.h>
 #include <math.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "./CDUTils.h"
 
@@ -377,12 +378,37 @@ eigenPair powerIteration(double *B, unsigned long size, int numThreads, double t
 
     
     if (eigenValue < 0) {
+
+
+
+        /*
         for (int i = 0; i < size; i++){
-            B[i * size + i] += fabs(eigenValue);
+            B[i * size + i] += fabs(eigenValue); // todo: change this, it is mutating our original B
         }
         free(eigenVectorTmp);
         free(eigenVector);
+        
         return powerIteration(B, size, numThreads, tolerance, iterationLimit);
+
+
+        */
+
+        
+
+        double *newB = (double *)malloc(size * size * sizeof(double));
+
+        memcpy(newB, B, size * size * sizeof(double));
+        for (int i = 0; i < size; i++){
+            newB[i * size + i] += fabs(eigenValue); // todo: change this, it is mutating our original B
+        }
+        free(eigenVectorTmp);
+        free(eigenVector);
+
+        eigP = powerIteration(newB, size, numThreads, tolerance, iterationLimit);
+
+        free(newB);
+        return eigP;
+        
     } else {
         printf("eigenvalue is %f\n", eigenValue);
         eigP.eigenvalue = eigenValue;
@@ -396,10 +422,82 @@ eigenPair powerIteration(double *B, unsigned long size, int numThreads, double t
     // return eigenVector;
 }
 
-void assignCommunity(double *restrict B, int nextGroupNum, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices, int numThreads)
+void createGlobalVertices(int *restrict globalVertices, unsigned long matrixSize, int numThreads)
+{
+    for (int i = 0; i < matrixSize; i++)
+    {
+        globalVertices[i] = i;
+    }
+}
+
+void assignCommunity(double *restrict B, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices, int numThreads)
 {
     double *B_g = (double *)malloc(currentMatrixSize * currentMatrixSize * sizeof(double)); // enough space for a size x size matrix of double types
     computeSubgraphModularityMatrix(B_g, B, currentMatrixSize, originalMatrixSize, globalVertices, numThreads);
+
+    eigenPair eigP = powerIteration(B_g, currentMatrixSize, numThreads, 0.00000001, 5000);
+
+    double *S = (double *)malloc(currentMatrixSize * sizeof(double)); // Membership vector, referreld to as S in the paper
+
+    createMembershipVector(eigP.eigenvector, S, currentMatrixSize);
+
+    printf("%f \n", eigP.eigenvalue);
+    //    deltaQ = s' * B_g * s; % equation 5 in the paper
+
+
+    double *B_gTimesS = (double *)malloc(currentMatrixSize * sizeof(double)); // Store the matrix-vector multiplication of B_g * S here
+    matVectMultiply(B_g, S, B_gTimesS, currentMatrixSize, numThreads);
+    double deltaQ = dotProduct(S, B_gTimesS, currentMatrixSize);
+    printf("DeltaQ: %f\n", deltaQ);
+    membershipVectorToFile(S, currentMatrixSize, MATLAB);
+
+    if (deltaQ < 0.1){ // if this isn't a good split
+
+    } else { // if this is a good split
+
+        int *leftIndices =  (int *)malloc(currentMatrixSize * sizeof(int)); // Indices that correspond to values of -1 in S
+        int *rightIndices = (int *)malloc(currentMatrixSize * sizeof(int)); // Indices that correspond to values of 1 in S
+        int *globalVerticesLeft = (int *)malloc(currentMatrixSize * sizeof(int));  // Global vertices that correspond to values of -1 in S
+        int *globalVerticesRight = (int *)malloc(currentMatrixSize * sizeof(int)); // Global vertices that correspond to values of 1 in S
+        int numLeft = 0;
+        int numRight = 0;
+
+        for (int i = 0; i < currentMatrixSize; i++)
+        {
+            if (S[i] == 1) {
+                rightIndices[numRight] = i;
+                globalVerticesRight[numRight] = globalVertices[i];
+                numRight++;
+            }
+            else {
+                leftIndices[numLeft] = globalVertices[i];
+                globalVerticesLeft[numLeft] = globalVertices[i];
+                numLeft++;
+            }
+        }
+
+        //Todo: consider realloc'ing over-allocated blocks
+
+        double *leftB = (double *)malloc(numLeft * numLeft * sizeof(double)); // Square matrix with the elements of B that correspond to values of -1 in S
+        double *rightB = (double *)malloc(numLeft * numLeft * sizeof(double)); // Square matrix with the elements of B that correspond to values of 1 in S
+
+        for (int i = 0; i < numLeft; i++){
+            for (int j = 0; j < numLeft; j++)
+            {
+                leftB[i*numLeft + j] = B[leftIndices[i] * currentMatrixSize + leftIndices[j]];
+            }
+        }
+        for (int i = 0; i < numRight; i++)
+        {
+            for (int j = 0; j < numRight; j++)
+            {
+                rightB[i * numRight + j] = B[rightIndices[i] * currentMatrixSize + rightIndices[j]];
+            }
+        }
+
+            printf("done\n");
+    }
+
     //
     // double *B_g = (double *)malloc(size * size * sizeof(double)); // enough space for a size x size matrix of double types
 
@@ -483,7 +581,7 @@ void computeSubgraphModularityMatrix(double *restrict B_g, double *restrict B, u
     }
 }
 
-void createMembershipVector(double *restrict S, double *restrict newS, unsigned long currentMatrixSize, unsigned long originalMatrixSize)
+void createMembershipVector(double *restrict S, double *restrict newS, unsigned long currentMatrixSize)
 {
     for (int i = 0; i < currentMatrixSize; i++)
     {

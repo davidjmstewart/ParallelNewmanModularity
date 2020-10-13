@@ -12,7 +12,7 @@ eig_v * largest_eigen_value;
 eig_v;
 
 Sm = (eig_v > 0) - (eig_v < 0);
-
+deltaQ = Sm' * A * Sm; % equation 5 in the paper
 if (Sm(1) ~= Sc(1))
     Sm = Sm*Sc(1);
 
@@ -22,3 +22,4 @@ differences = abs(sum(Sc == Sm) - size(A,1))
 if (~S_vecs_same)
     sprintf('Not equal! Total differences:  %d', differences)
 end
+deltaQ
