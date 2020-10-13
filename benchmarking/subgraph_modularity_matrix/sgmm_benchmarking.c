@@ -27,20 +27,29 @@ double parallelTimings[NUM_MATRIX_SIZES][THREAD_RANGE];
 // #pragma GCC option("arch=native", "tune=native", "no-zero-upper") //Enable AVX
 #pragma GCC target("avx") //Enable AVX
 
-void doSequentialComputation(double *restrict B_g, double *restrict B, unsigned long matrixSize)
+void doSequentialComputation(double *restrict B_g, double *restrict B, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices)
 {
+    // printf("Global vertices %d\n", globalVertices[2]);
+    //Copy the necessary rows and columns out of B and put them into B_g
+    for (int i = 0; i < currentMatrixSize; i++)
+    {
+        for (int j = 0; j < currentMatrixSize; j++)
+        {
+            B_g[i * currentMatrixSize + j] = B[globalVertices[i] * originalMatrixSize + globalVertices[j]];
+        }
+    }
     int i, j, x, y;
-    int n = matrixSize;
-    double *Bsum = (double *)malloc(matrixSize * sizeof(double)); // Sum each row of B and put it in here
+    int n = currentMatrixSize;
+    double *Bsum = (double *)malloc(currentMatrixSize * sizeof(double)); // Sum each row of B and put it in here
 
     double *Bhead;
     double tmp;
-    // printf("BSUM: SEQUENTIAL:");
-    for (i = 0; i < matrixSize; i++)
+
+    for (i = 0; i < currentMatrixSize; i++)
     {
-        Bhead = &B[i * matrixSize];
+        Bhead = &B_g[i * currentMatrixSize];
         tmp = 0;
-        for (j = 0; j < matrixSize; j++)
+        for (j = 0; j < currentMatrixSize; j++)
         {
             tmp += Bhead[j];
         }
@@ -48,41 +57,41 @@ void doSequentialComputation(double *restrict B_g, double *restrict B, unsigned 
         // printf("%.4f\n", Bsum[i]);
     }
 
-    for (i = 0; i < matrixSize; i++)
+    // #pragma omp parallel for private(j)
+    for (i = 0; i < currentMatrixSize; i++)
     {
-        for (j = 0; j < matrixSize; j++)
-        {
-            if (i == j)
-            {
-                B_g[i * matrixSize + j] = B[i * matrixSize + j] - Bsum[i];
-            }
-            else
-            {
-                B_g[i * matrixSize + j] = B[i * matrixSize + j];
-            }
-        }
+        B_g[i * currentMatrixSize + i] -= Bsum[i];
     }
 }
 
-void doParallelComputation(double *restrict B_g, double *restrict B, unsigned long matrixSize, int numThreads)
+void doParallelComputation(double *restrict B_g, double *restrict B, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices, int numThreads)
 {
-    int i, j, x, y;
-    int n = matrixSize;
-    double *Bsum = (double *)malloc(matrixSize * sizeof(double)); // Sum each row of B and put it in here
 
-    double *Bhead;
-    // double tmp = 0;
     omp_set_num_threads(numThreads);
-
-
-    // printf("BSUM: PARALLEL:");
     #pragma omp parallel for
-    for (i = 0; i < matrixSize; i++)
+    for (int i = 0; i < currentMatrixSize; i++)
     {
-        Bhead = &B[i * matrixSize];
+        double *B_gHead = &B_g[i * currentMatrixSize];
+        int globalVertexIndex = globalVertices[i] * originalMatrixSize;
+
+        for (int j = 0; j < currentMatrixSize; j++)
+        {
+            B_gHead[j] = B[globalVertexIndex + globalVertices[j]];
+        }
+    }
+    int i, j, x, y;
+    int n = currentMatrixSize;
+    double *Bsum = (double *)malloc(currentMatrixSize * sizeof(double)); // Sum each row of B and put it in here
+
+
+    // double tmp;
+    #pragma omp parallel for
+    for (i = 0; i < currentMatrixSize; i++)
+    {
+        double *Bhead;
+        Bhead = &B_g[i * currentMatrixSize];
         double tmp = 0;
-        // #pragma omp reduction(+:tmp)
-        for (j = 0; j < matrixSize; j++)
+        for (int j = 0; j < currentMatrixSize; j++)
         {
             tmp += Bhead[j];
         }
@@ -91,17 +100,16 @@ void doParallelComputation(double *restrict B_g, double *restrict B, unsigned lo
     }
 
     #pragma omp parallel for private(j)
-    for (i = 0; i < matrixSize; i++)
+    for (i = 0; i < currentMatrixSize; i++)
     {
-        for (j = 0; j < matrixSize; j++)
-        {
-            if (i == j) {
-                B_g[i * matrixSize + j] = B[i * matrixSize + j] - Bsum[i];
-            }
-            else {
-                B_g[i * matrixSize + j] = B[i * matrixSize + j];
-            }
-        }
+        B_g[i * currentMatrixSize + i] -= Bsum[i];
+    }
+}
+
+void createGlobalVertices(int *restrict globalVertices, unsigned long matrixSize, int numThreads)
+{
+    for (int i = 0; i < matrixSize; i++){
+        globalVertices[i] = i;
     }
 }
 
@@ -129,49 +137,36 @@ int main(int argc, char *argv[])
         double *B = (double *)malloc(matrixSize * matrixSize * sizeof(double)); // Matrix to multiply by V
         double *seqB_g = (double *)malloc(matrixSize * matrixSize * sizeof(double)); // Store the subgraph modularity matrix computed sequentially here
         double *parB_g = (double *)malloc(matrixSize * matrixSize * sizeof(double)); // Store the subgraph modularity matrix computed in parallel
+        int *globalVertices = (int *)malloc(matrixSize * sizeof(int));               // Store the subgraph modularity matrix computed in parallel
 
         double *D = (int *)malloc(matrixSize * sizeof(int)); // Matrix to multiply by V
 
         genAdjacencyMatrix(A, matrixSize);
-        createDegreesVec(A, D, matrixSize, 16);
+        createDegreesVec(A, D, matrixSize, 1);
 
         createModularityMatrix(B, A, D, matrixSize, 16);
 
-
+        createGlobalVertices(globalVertices, matrixSize, 1);
         for (int a = 0; a < NUM_AVERAGES; a++)
         {
             clock_gettime(CLOCK_MONOTONIC, &start);
-            doSequentialComputation(seqB_g, B, matrixSize);
+            doSequentialComputation(seqB_g, B, matrixSize, matrixSize, globalVertices);
+            // integerMatrixToFile(A, matrixSize, MATLAB);
+            // matrixToFile(seqB_g, matrixSize, MATLAB);
+
             clock_gettime(CLOCK_MONOTONIC, &finish);
             elapsed = (finish.tv_sec - start.tv_sec);
             elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
             sequentialTimings[m] += elapsed;
-            /*
-            for (int i = 0; i < matrixSize; i++)
-            {
-                for (int j = 0; j < matrixSize; j++)
-                {
-                    printf("%.4f ", seqB_g[i*matrixSize + j]);
-                }
-                printf("\n");
-            }
-            printf("\n\n");
-            */
+
             for (int t = 1; t <= THREAD_RANGE; t++)
             {
                 clock_gettime(CLOCK_MONOTONIC, &start);
 
-                doParallelComputation(parB_g, B, matrixSize, t);
-                /*
-                for (int i = 0; i < matrixSize; i++)
-                {
-                    for (int j = 0; j < matrixSize; j++)
-                    {
-                        printf("%.4f ", parB_g[i * matrixSize + j]);
-                    }
-                    printf("\n");
-                }
-                */
+                doParallelComputation(parB_g, B, matrixSize, matrixSize, globalVertices, t);
+                // integerMatrixToFile(A, matrixSize, MATLAB);
+                // matrixToFile(parB_g, matrixSize, MATLAB);
+
                 clock_gettime(CLOCK_MONOTONIC, &finish);
                 elapsed = (finish.tv_sec - start.tv_sec);
                 elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;

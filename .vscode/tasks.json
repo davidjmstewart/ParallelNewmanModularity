@@ -61,7 +61,8 @@
             "-Wall",
             "-Wpedantic",
             "-Waggressive-loop-optimizations",
-            "-O3"
+          // "-O3",
+          // "-march=native"
           ],
           "options": {
             "cwd": "${workspaceFolder}"
@@ -107,8 +108,8 @@
             "-Wall",
             "-Wpedantic",
             "-Waggressive-loop-optimizations",
-            "-O3",
-            "-march=native",
+            // "-O3",
+            // "-march=native",
             // "-funroll-loops",
             // "-fopt-info-vec-all",
           ],

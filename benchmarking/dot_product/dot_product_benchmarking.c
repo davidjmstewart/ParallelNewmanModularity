@@ -37,7 +37,7 @@ double doSequentialComputation(double *D, double *A, unsigned long matrixSize)
     return result;
 }
 
-double doParallelComputation(double *D, double *A, unsigned long matrixSize, int numThreads)
+double doParallelComputation(double *restrict D, double *restrict A, unsigned long matrixSize, int numThreads)
 {
     omp_set_num_threads(numThreads);
     unsigned long i;
@@ -51,7 +51,21 @@ double doParallelComputation(double *D, double *A, unsigned long matrixSize, int
     }
     return result;
 
- 
+    /* COMPARE VS UNROLLED, NO THREADING WHICH IS FASTER
+    omp_set_num_threads(numThreads);
+    unsigned long i;
+    double result = 0.0;
+    double sum0, sum1, sum2, sum3, sum4, sum5, sum6, sum7;
+    sum0 = sum1 = sum2 = sum3 = sum4 = sum5 = sum6 = sum7 = 0;
+
+#pragma omp  for simd 
+        for (i = 0; i < matrixSize; i+=4){
+            result += D[i] * A[i] + D[i + 1] * A[i + 1] + D[i + 2] * A[i + 2] + D[i + 3] * A[i + 3];
+        }
+
+    return result;
+
+    */
 }
 
 void genRandVector(double *S, unsigned long size)
@@ -108,10 +122,9 @@ int main(int argc, char *argv[])
                 elapsed = (finish.tv_sec - start.tv_sec);
                 elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
                 parallelTimings[m][t - 1] += elapsed;
-                for (int i = 0; i < matrixSize; i++)
-                {
+
                     assert(serialDotProduct == parallelDotProduct);
-                }
+            
             }
         }
         free(V1);

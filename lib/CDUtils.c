@@ -50,10 +50,11 @@ void createDegreesVec(int *A, int *D, unsigned long size, int numThreads)
     }
 
     omp_set_num_threads(numThreads);
-    int sum = 0;
-    #pragma omp parallel for private(i, j) reduction(+:sum)
+    
+    #pragma omp parallel for private(i, j) 
     for (i = 0; i < size; i++)
     {
+        int sum = 0;
         int *ARow = &A[i * size]; // compute row once in this thread to save constant dereferencing
         for (j = 0; j < size; j++)
         {
@@ -115,12 +116,12 @@ double dotProduct(double *A, double *x, unsigned long size)
     return sum;
 }
 
-double rayleighQuotient(double * B, double * eigenVector, unsigned long size){
+double rayleighQuotient(double * B, double * eigenVector, unsigned long size, int numThreads){
     double e = 0;
     double *By = (double *)malloc(size * sizeof(double));
     // int i, j;
 
-    matVectMultiply(B, eigenVector, By, size, 2);
+    matVectMultiply(B, eigenVector, By, size, numThreads);
 
     /*
     #pragma omp parallel for private(i, j)
@@ -149,23 +150,23 @@ void matrixToFile(double *A, unsigned long size, enum OutputType outputType) {
     {
         FILE *fp = NULL;
         fp = fopen("./benchmarking/python_testing_files/py-mat.txt", "w");
-        fwrite("[\n", sizeof(char), 1, fp);
+        // fwrite("[\n", sizeof(char), 1, fp);
 
         for (int i = 0; i < size; i++)
         {
-            fwrite("[", sizeof(char), 1, fp);
+            // fwrite("[", sizeof(char), 1, fp);
 
             for (int j = 0; j < size; j++)
             {
-                fprintf(fp, "%0.9f", A[i * size + j]);
-                if (j != size - 1)
-                {
-                    fwrite(", ", sizeof(char), 2, fp);
-                }
+                fprintf(fp, "%0.9f ", A[i * size + j]);
+                // if (j != size - 1)
+                // {
+                //     fwrite(", ", sizeof(char), 2, fp);
+                // }
             }
-            fwrite("],\n", sizeof(char), 3, fp);
+            fwrite("\n", sizeof(char), 1, fp);
         }
-        fwrite("]\n", sizeof(char), 1, fp);
+        // fwrite("]\n", sizeof(char), 1, fp);
         fclose(fp);
     }
     else if (outputType == MATLAB)
@@ -190,6 +191,55 @@ void matrixToFile(double *A, unsigned long size, enum OutputType outputType) {
         fclose(fp);
     }
 
+}
+
+void integerMatrixToFile(int *A, unsigned long size, enum OutputType outputType)
+{
+
+    if (outputType == Python)
+    {
+        FILE *fp = NULL;
+        fp = fopen("./benchmarking/python_testing_files/integer-matrix-py-mat.txt", "w");
+        fwrite("[\n", sizeof(char), 1, fp);
+
+        for (int i = 0; i < size; i++)
+        {
+            fwrite("[", sizeof(char), 1, fp);
+
+            for (int j = 0; j < size; j++)
+            {
+                fprintf(fp, "%d", A[i * size + j]);
+                if (j != size - 1)
+                {
+                    fwrite(", ", sizeof(char), 2, fp);
+                }
+            }
+            fwrite("],\n", sizeof(char), 3, fp);
+        }
+        fwrite("]\n", sizeof(char), 1, fp);
+        fclose(fp);
+    }
+    else if (outputType == MATLAB)
+    {
+        FILE *fp = NULL;
+        fp = fopen("./benchmarking/matlab_testing_files/integer-matrix-matlab-mat.txt", "w");
+
+        for (int i = 0; i < size; i++)
+        {
+
+            for (int j = 0; j < size; j++)
+            {
+                // fwrite(&A[i * size + j], sizeof(double), 1, fp); /* Write to File */
+                fprintf(fp, "%d", A[i * size + j]);
+                if (j != size - 1)
+                {
+                    fwrite(" ", sizeof(char), 1, fp);
+                }
+            }
+            fwrite("\n", sizeof(char), 1, fp);
+        }
+        fclose(fp);
+    }
 }
 
 void membershipVectorToFile(double *S, unsigned long size, enum OutputType outputType)
@@ -252,11 +302,11 @@ void matVectMultiply(double *restrict A, double *restrict V, double *restrict re
     }
 }
 
-double* powerIteration(double *B, unsigned long size, int numThreads, double tolerance, int iterationLimit)
+eigenPair powerIteration(double *B, unsigned long size, int numThreads, double tolerance, int iterationLimit)
 {
     double *eigenVectorTmp = (double *)malloc(size * sizeof(double));
     double *eigenVector = (double *)malloc(size * sizeof(double));
-
+    eigenPair eigP;
     genRandMembershipVector(eigenVectorTmp, size);
     for (int i = 0; i < size; i++){
         eigenVector[i] = eigenVectorTmp[i];
@@ -290,7 +340,7 @@ double* powerIteration(double *B, unsigned long size, int numThreads, double tol
     */
         int k;
 
-        matVectMultiply(B, eigenVectorTmp, eigenVector, size, 2);
+        matVectMultiply(B, eigenVectorTmp, eigenVector, size, numThreads);
 
         norm = 0;
         // double max = (eigenVector[0]);
@@ -304,7 +354,7 @@ double* powerIteration(double *B, unsigned long size, int numThreads, double tol
         {
             eigenVectorTmp[k] = eigenVector[k] / sqrt(norm);
         }
-        eigenValue = rayleighQuotient(B, eigenVector, size);
+        eigenValue = rayleighQuotient(B, eigenVector, size, numThreads);
         double diff = fabs(eigenValue - prevEigenValue);
         if (diff < tolerance)
         {
@@ -335,15 +385,115 @@ double* powerIteration(double *B, unsigned long size, int numThreads, double tol
         return powerIteration(B, size, numThreads, tolerance, iterationLimit);
     } else {
         printf("eigenvalue is %f\n", eigenValue);
-        return eigenVector;
+        eigP.eigenvalue = eigenValue;
+        eigP.eigenvector = eigenVector;
+        return eigP;
+        // return eigenVector;
     }
-    return eigenVector;
+    eigP.eigenvalue = eigenValue;
+    eigP.eigenvector = eigenVector;
+    return eigP;
+    // return eigenVector;
 }
 
-void assignCommunity(double *restrict B, int nextGroupNum) {
-
-}
-
-void computeSubgraphModularityMatrix(double *restrict B_g, double *restrict B, unsigned long size, int numThreads)
+void assignCommunity(double *restrict B, int nextGroupNum, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices, int numThreads)
 {
+    double *B_g = (double *)malloc(currentMatrixSize * currentMatrixSize * sizeof(double)); // enough space for a size x size matrix of double types
+    computeSubgraphModularityMatrix(B_g, B, currentMatrixSize, originalMatrixSize, globalVertices, numThreads);
+    //
+    // double *B_g = (double *)malloc(size * size * sizeof(double)); // enough space for a size x size matrix of double types
+
+    // computeSubgraphModularityMatrix(B_g, B, size, numThreads);
+    // double *eigenVector = powerIteration(B_g, size, numThreads, 0.0001, 5000);
+    // eigenPair eigP = powerIteration(B_g, size, numThreads, 0.0001, 5000); 
+    // double * = (double *)malloc(size * sizeof(double));
+    // createMembershipVector(eigenVector, S, unsigned long matrixSize);
+
+    /*
+        if (eigenPair.eigenvalue < 0.1){
+
+
+        } else {
+
+            int numLeft, numRight = 0;
+
+            for (int i = 0; i < size; i++){
+                if (S[i] == 1){
+                    numRight++;
+                } else {
+                    numLeft++;
+                }   
+            }
+
+        }
+
+    */
+
+    /*
+#pragma omp task shared(i) firstprivate(n)
+    i = fib(n - 1);
+
+#pragma omp task shared(j) firstprivate(n)
+    j = fib(n - 2);
+
+#pragma omp taskwait
+*/
+
+    // free(S);
+
+    // free(B_g);
+}
+
+
+
+void computeSubgraphModularityMatrix(double *restrict B_g, double *restrict B, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices, int numThreads)
+{
+    omp_set_num_threads(numThreads);
+#pragma omp parallel for
+    for (int i = 0; i < currentMatrixSize; i++)
+    {
+        for (int j = 0; j < currentMatrixSize; j++)
+        {
+            B_g[i * currentMatrixSize + j] = B[globalVertices[i] * originalMatrixSize + globalVertices[j]];
+        }
+    }
+    int i;
+    // int n = currentMatrixSize;
+    double *Bsum = (double *)malloc(currentMatrixSize * sizeof(double)); // Sum each row of B and put it in here
+
+// double tmp;
+#pragma omp parallel for
+    for (i = 0; i < currentMatrixSize; i++)
+    {
+        double *Bhead;
+        Bhead = &B_g[i * currentMatrixSize];
+        double tmp = 0;
+        for (int j = 0; j < currentMatrixSize; j++)
+        {
+            tmp += Bhead[j];
+        }
+        Bsum[i] = tmp;
+        // printf("%.4f\n", Bsum[i]);
+    }
+
+#pragma omp parallel for
+    for (i = 0; i < currentMatrixSize; i++)
+    {
+        B_g[i * currentMatrixSize + i] -= Bsum[i];
+    }
+}
+
+void createMembershipVector(double *restrict S, double *restrict newS, unsigned long currentMatrixSize, unsigned long originalMatrixSize)
+{
+    for (int i = 0; i < currentMatrixSize; i++)
+    {
+        if (S[i] < 0)
+        {
+            newS[i] = 1;
+        }
+        else
+        {
+            newS[i] = -1;
+        }
+    }
 }

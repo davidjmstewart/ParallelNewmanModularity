@@ -4,8 +4,8 @@
 
 #include "./lib/CDUTils.h"
 
-unsigned long const MATRIX_SIZE = 1000;
-const int NUM_THREADS = 16;
+unsigned long const MATRIX_SIZE = 10000;
+const int NUM_THREADS = 2;
 long double elapsed;
 struct timespec start, finish;
 
@@ -43,18 +43,18 @@ int main(int argc, char *argv[])
     printf("Creating modularity Matrix \n");
     createModularityMatrix(B, A, D, MATRIX_SIZE, NUM_THREADS);
     printf("Outputting matlab file\n");
-    matrixToFile(B, MATRIX_SIZE, MATLAB);
+    // matrixToFile(B, MATRIX_SIZE, MATLAB);
     // matrixToFile(B, MATRIX_SIZE, Python);
 
     printf("Performing power iteration \n");
     clock_gettime(CLOCK_MONOTONIC, &start);
-    double *eigenVector = powerIteration(B, MATRIX_SIZE, NUM_THREADS, 0.001, 5000);
+    eigenPair eigenPair = powerIteration(B, MATRIX_SIZE, NUM_THREADS, 0.00001, 5000);
     clock_gettime(CLOCK_MONOTONIC, &finish);
     elapsed = (finish.tv_sec - start.tv_sec);
     elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
     printf("elapsed: %.9Lf \n", elapsed);
-    printf("%0.9f\n", eigenVector[0]);
-    membershipVectorToFile(eigenVector, MATRIX_SIZE, MATLAB);
+    printf("%0.9f\n", eigenPair.eigenvalue);
+    membershipVectorToFile(eigenPair.eigenvector, MATRIX_SIZE, MATLAB);
     // membershipVectorToFile(eigenVector, MATRIX_SIZE, Python);
 
     free(A);

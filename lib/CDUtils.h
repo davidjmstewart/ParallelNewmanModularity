@@ -10,6 +10,19 @@ enum OutputType
     MATLAB = 0
 };
 
+typedef struct eigenPair
+{
+    double eigenvalue;
+    double *eigenvector;
+} eigenPair;
+
+// node for a linked list
+typedef struct node
+{
+    int num;
+    struct node *next;
+} node_t;
+
 // Generates a size x size adjacency matrix in a flat structure
 // INDEXING EXAMPLE
 // If size is 5, the 3rd row, 4th column of A would be A[2*size + 3]
@@ -27,17 +40,18 @@ void createModularityMatrix(double *B, int *A, int *D, unsigned long size, int n
 
 int graphDegree(int *D, unsigned long size);
 
-double *powerIteration(double *B, unsigned long size, int numThreads, double tolerance, int iterationLimit);
+eigenPair powerIteration(double *B, unsigned long size, int numThreads, double tolerance, int iterationLimit);
 
 void matrixToFile(double *A, unsigned long size, enum OutputType outputType);
 void membershipVectorToFile(double *S, unsigned long size, enum OutputType outputType);
+void integerMatrixToFile(int *A, unsigned long size, enum OutputType outputType);
 
 void matVectMultiply(double *restrict A, double *restrict V, double *restrict results, unsigned long matrixSize, int numThreads);
 
 // bulk of Newman's algorithm driver logic is in here.
-void assignCommunity(double *restrict B, int nextGroupNum);
+void assignCommunity(double *restrict B, int nextGroupNum, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices, int numThreads);
 
 // Computes equation 6 in the paper. Places the results in B_g
-void computeSubgraphModularityMatrix(double *restrict B_g, double *restrict B, unsigned long size, int numThreads);
+void computeSubgraphModularityMatrix(double *restrict B_g, double *restrict B, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices, int numThreads);
 
 #endif /* CDUTILS_H */

@@ -12,7 +12,7 @@
 #define T 1
 #define THREAD_RANGE 16 // Run for 1:THREAD_RANGE threads
 #define NUM_AVERAGES 10 // take the average of 5 timings for each matrix size, and each number of threads
-#define NUM_MATRIX_SIZES 6
+#define NUM_MATRIX_SIZES 9
 // unsigned long matrixSizes[NUM_MATRIX_SIZES] = {51200};
 
 unsigned long matrixSizes[NUM_MATRIX_SIZES] = { 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200 };
@@ -27,7 +27,7 @@ double parallelTimings[NUM_MATRIX_SIZES][THREAD_RANGE];
 // #pragma GCC option("arch=native", "tune=native", "no-zero-upper") //Enable AVX
 #pragma GCC target("avx")                                         //Enable AVX
 
-void doSequentialComputation(double *A, double *V, double *results, unsigned long matrixSize)
+void doSequentialComputation(double *restrict A, double *restrict V, double *restrict results, unsigned long matrixSize)
 {
     // double *V3 = (double *)malloc(2 * matrixSize * sizeof(double));
     int i, j;
@@ -47,7 +47,8 @@ void doSequentialComputation(double *A, double *V, double *results, unsigned lon
 
 void doParallelComputation(double *restrict A, double *restrict V, double *restrict results, unsigned long matrixSize, int numThreads)
 {
-    
+
+    omp_set_num_threads(numThreads);
     const int BLOCK_SIZE = 20;
     int i, j, x, y;
     int n = matrixSize;
