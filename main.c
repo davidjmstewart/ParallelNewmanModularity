@@ -58,7 +58,12 @@ int main(int argc, char *argv[])
     // membershipVectorToFile(eigenVector, MATRIX_SIZE, Python);
     int *globalVertices = (int *)malloc(MATRIX_SIZE * sizeof(int)); // Store the subgraph modularity matrix computed in parallel
     createGlobalVertices(globalVertices, MATRIX_SIZE, 4);
-    assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
+    #pragma omp parallel 
+    {
+        #pragma omp single // we want a single thread to enter this initially
+        assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
+    }
+
     free(A);
     free(D);
     free(B);

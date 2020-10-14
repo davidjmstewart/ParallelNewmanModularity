@@ -103,6 +103,19 @@ int graphDegree(int *D, unsigned long size) {
     return total;
 }
 
+
+void printDoubleMatrix(double *matrix, int size)
+{
+    printf("Doing\n");
+    int i, j;
+    for (i = 0; i < size; ++i)
+    {
+        for (j = 0; j < size; ++j)
+            printf("%f ", matrix[i*size + j]);
+        printf("\n");
+    }
+}
+
 // todo: parallelise
 double dotProduct(double *A, double *x, unsigned long size)
 {
@@ -430,7 +443,7 @@ void createGlobalVertices(int *restrict globalVertices, unsigned long matrixSize
     }
 }
 
-void assignCommunity(double *restrict B, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices, int numThreads)
+community_t* assignCommunity(double *restrict B, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices, int numThreads)
 {
     double *B_g = (double *)malloc(currentMatrixSize * currentMatrixSize * sizeof(double)); // enough space for a size x size matrix of double types
     computeSubgraphModularityMatrix(B_g, B, currentMatrixSize, originalMatrixSize, globalVertices, numThreads);
@@ -444,14 +457,22 @@ void assignCommunity(double *restrict B, unsigned long currentMatrixSize, unsign
     printf("%f \n", eigP.eigenvalue);
     //    deltaQ = s' * B_g * s; % equation 5 in the paper
 
-
+    matrixToFile(B_g, currentMatrixSize, MATLAB);
     double *B_gTimesS = (double *)malloc(currentMatrixSize * sizeof(double)); // Store the matrix-vector multiplication of B_g * S here
+
     matVectMultiply(B_g, S, B_gTimesS, currentMatrixSize, numThreads);
     double deltaQ = dotProduct(S, B_gTimesS, currentMatrixSize);
     printf("DeltaQ: %f\n", deltaQ);
-    membershipVectorToFile(S, currentMatrixSize, MATLAB);
+    // membershipVectorToFile(S, currentMatrixSize, MATLAB);
 
     if (deltaQ < 0.1){ // if this isn't a good split
+        community_t * community = (community_t *) malloc(sizeof(community_t));
+        community->nextCommunity  = NULL;
+        community->globalVertices = globalVertices;
+        community->numNodes = currentMatrixSize;
+        return community;
+
+
 
     } else { // if this is a good split
 
@@ -496,6 +517,29 @@ void assignCommunity(double *restrict B, unsigned long currentMatrixSize, unsign
         }
 
             printf("done\n");
+            // scep_conf = malloc(sizeof(*scep_conf)); /* cast unnecessary. */
+
+        // willy_t *willyBBB = malloc(sizeof(willy_t));
+        // free(willyBBB);
+        community_t *leftCommunity = malloc(sizeof(struct community));
+        community_t *rightCommunity = malloc(sizeof(struct community));
+
+        #pragma omp task shared(leftCommunity) 
+            leftCommunity = assignCommunity(leftB, numLeft, originalMatrixSize, globalVerticesLeft, 2);
+
+        #pragma omp task shared(rightCommunity) 
+            rightCommunity = assignCommunity(rightB, numRight, originalMatrixSize, globalVerticesRight, 2);
+        #pragma omp taskwait
+        community_t* tmp = leftCommunity;
+        while(tmp->nextCommunity != NULL)
+        {
+            tmp = tmp->nextCommunity;                 // Move to next node
+        }
+
+        tmp->nextCommunity = rightCommunity;
+        return leftCommunity;
+
+
     }
 
     //

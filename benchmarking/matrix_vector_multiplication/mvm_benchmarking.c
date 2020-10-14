@@ -12,7 +12,7 @@
 #define T 1
 #define THREAD_RANGE 16 // Run for 1:THREAD_RANGE threads
 #define NUM_AVERAGES 10 // take the average of 5 timings for each matrix size, and each number of threads
-#define NUM_MATRIX_SIZES 9
+#define NUM_MATRIX_SIZES 6
 // unsigned long matrixSizes[NUM_MATRIX_SIZES] = {51200};
 
 unsigned long matrixSizes[NUM_MATRIX_SIZES] = { 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200 };

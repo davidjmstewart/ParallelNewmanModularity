@@ -5,6 +5,7 @@
 // gcc -fopenmp -g ./fib.c -o fib -lm -Wall -Wpedantic -Waggressive-loop-optimizations 
 int fib(int n)
 {
+  
   int i, j;
   if (n<2)
     return n;
@@ -75,7 +76,7 @@ int main()
 clock_gettime(CLOCK_MONOTONIC, &start);
   #pragma omp parallel shared(n)
   {
-    #pragma omp single
+    // #pragma omp single
     printf ("fib(%d) = %d\n", n, fib(n));
   }
 

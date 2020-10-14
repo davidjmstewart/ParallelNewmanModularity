@@ -16,6 +16,17 @@ typedef struct eigenPair
     double *eigenvector;
 } eigenPair;
 
+typedef struct community
+{
+    int numNodes;           // how many nodes are in this community
+    int *globalVertices; // global index of nodes that belong in this community
+    struct community *nextCommunity;
+} community_t;
+
+typedef struct smilly {
+    int test;
+} willy_t;
+
 // node for a linked list
 typedef struct node
 {
@@ -49,8 +60,8 @@ void integerMatrixToFile(int *A, unsigned long size, enum OutputType outputType)
 void matVectMultiply(double *restrict A, double *restrict V, double *restrict results, unsigned long matrixSize, int numThreads);
 
 // bulk of Newman's algorithm driver logic is in here.
-void assignCommunity(double *restrict B, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices, int numThreads);
-
+community_t* assignCommunity(double *restrict B, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices, int numThreads);
+void printDoubleMatrix(double *matrix, int size);
 void createGlobalVertices(int *restrict globalVertices, unsigned long matrixSize, int numThreads);
 
 // Computes equation 6 in the paper. Places the results in B_g
