@@ -4,7 +4,7 @@
 
 #include "./lib/CDUTils.h"
 
-unsigned long const MATRIX_SIZE = 10;
+unsigned long const MATRIX_SIZE = 50;
 const int NUM_THREADS = 2;
 long double elapsed;
 struct timespec start, finish;
@@ -48,7 +48,8 @@ int main(int argc, char *argv[])
     integerMatrixToFile(A, MATRIX_SIZE, MATLAB);
     printf("Performing power iteration \n");
     clock_gettime(CLOCK_MONOTONIC, &start);
-    // eigenPair eigenPair = powerIteration(B, MATRIX_SIZE, NUM_THREADS, 0.0000001, 5000);
+    eigenPair eigenPair = powerIteration(B, MATRIX_SIZE, NUM_THREADS, 0.000000001, 5000);
+    membershipVectorToFile(eigenPair.eigenvector, MATRIX_SIZE, MATLAB);
     clock_gettime(CLOCK_MONOTONIC, &finish);
     elapsed = (finish.tv_sec - start.tv_sec);
     elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
@@ -58,16 +59,39 @@ int main(int argc, char *argv[])
     // membershipVectorToFile(eigenVector, MATRIX_SIZE, Python);
     int *globalVertices = (int *)malloc(MATRIX_SIZE * sizeof(int)); // Store the subgraph modularity matrix computed in parallel
     createGlobalVertices(globalVertices, MATRIX_SIZE, 4);
-    #pragma omp parallel 
-    {
-        #pragma omp single // we want a single thread to enter this initially
-        assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
-    }
+    community_t* comm;
+
+// #pragma omp parallel shared(comm)
+    // {
+// #pragma omp single // we want a single thread to enter this initially
+        comm = assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
+    // }
+    // free(comm);
 
     free(A);
     free(D);
     free(B);
     free(globalVertices);
+
+    community_t *tmp;
+
+    while (comm != NULL)
+    {
+        for (int i = 0; i < comm->numNodes; i++){
+            printf("%d ", comm->globalVertices[i]);
+        }
+        printf("\n");
+        comm = comm->nextCommunity;
+    }
+
+
+
+    while (comm != NULL)
+    {
+        tmp = comm;
+        comm = comm->nextCommunity;
+        free(tmp);
+    }
 
     return 0;
 }

@@ -153,7 +153,7 @@ double rayleighQuotient(double * B, double * eigenVector, unsigned long size, in
     */
 
     e = dotProduct(By, eigenVector, size) / dotProduct(eigenVector, eigenVector, size);
-
+    free(By);
     return e;
 }
 
@@ -423,7 +423,7 @@ eigenPair powerIteration(double *B, unsigned long size, int numThreads, double t
         return eigP;
         
     } else {
-        printf("eigenvalue is %f\n", eigenValue);
+        // printf("eigenvalue is %f\n", eigenValue);
         eigP.eigenvalue = eigenValue;
         eigP.eigenvector = eigenVector;
         return eigP;
@@ -431,6 +431,7 @@ eigenPair powerIteration(double *B, unsigned long size, int numThreads, double t
     }
     eigP.eigenvalue = eigenValue;
     eigP.eigenvector = eigenVector;
+    free(eigenVectorTmp);
     return eigP;
     // return eigenVector;
 }
@@ -445,31 +446,78 @@ void createGlobalVertices(int *restrict globalVertices, unsigned long matrixSize
 
 community_t* assignCommunity(double *restrict B, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices, int numThreads)
 {
-    double *B_g = (double *)malloc(currentMatrixSize * currentMatrixSize * sizeof(double)); // enough space for a size x size matrix of double types
-    computeSubgraphModularityMatrix(B_g, B, currentMatrixSize, originalMatrixSize, globalVertices, numThreads);
 
-    eigenPair eigP = powerIteration(B_g, currentMatrixSize, numThreads, 0.00000001, 5000);
+    double *B_g = (double *)malloc(currentMatrixSize * currentMatrixSize * sizeof(double)); // enough space for a size x size matrix of double types
+    printf("Current matrix size is %ld \n", currentMatrixSize);
+    printf("Just allocated %ld bytes to B_g \n", currentMatrixSize * currentMatrixSize * sizeof(double));
+
+    computeSubgraphModularityMatrix(B_g, B, currentMatrixSize, originalMatrixSize, globalVertices, numThreads);
+    /*
+    for (int i = 0; i < currentMatrixSize; i++)
+    {
+        for (int j = 0; j < currentMatrixSize; j++)
+        {
+
+            double val = B_g[i * currentMatrixSize + j];
+            printf("Val at (%d, %d) is %f\n", i, j, val);
+            if (isnan(val) || val != val)
+            {
+                printf("We have a NaN at (%d, %d)", i, j);
+            }
+        }
+    }
+    */
+    eigenPair eigP = powerIteration(B_g, currentMatrixSize, numThreads, 0.0000000001, 5000);
 
     double *S = (double *)malloc(currentMatrixSize * sizeof(double)); // Membership vector, referreld to as S in the paper
 
     createMembershipVector(eigP.eigenvector, S, currentMatrixSize);
 
-    printf("%f \n", eigP.eigenvalue);
+    // printf("%f \n", eigP.eigenvalue);
     //    deltaQ = s' * B_g * s; % equation 5 in the paper
 
-    matrixToFile(B_g, currentMatrixSize, MATLAB);
+    // matrixToFile(B_g, currentMatrixSize, MATLAB);
     double *B_gTimesS = (double *)malloc(currentMatrixSize * sizeof(double)); // Store the matrix-vector multiplication of B_g * S here
 
     matVectMultiply(B_g, S, B_gTimesS, currentMatrixSize, numThreads);
-    double deltaQ = dotProduct(S, B_gTimesS, currentMatrixSize);
+    double deltaQ = 0;
+    printf("Doing dot product on %ld vecetors \n", currentMatrixSize);
+    deltaQ = dotProduct(S, B_gTimesS, currentMatrixSize);
+    if (currentMatrixSize <= 1){
+        printf("We shouldn't be at this point\n");
+    }
+    if (deltaQ == isnan(deltaQ) || deltaQ != deltaQ){
+        /*
+        for (int i = 0; i < currentMatrixSize; i++){
+            for (int j = 0; j < currentMatrixSize; j++) {
+
+                double val = B_g[i * currentMatrixSize + j];
+                printf("Val at (%d, %d) is %f\n", i, j, val);
+                if (isnan(val) || val!=val){
+                    printf("We have a NaN at (%d, %d)", i, j);
+                }
+
+            }
+        }
+        */
+        //     matrixToFile(B_g, currentMatrixSize, MATLAB);
+        // matrixToFile(B_gTimesS, currentMatrixSize, MATLAB);
+        // membershipVectorToFile(S, currentMatrixSize, MATLAB);
+        printf("Something's fucked!\n");
+    }
     printf("DeltaQ: %f\n", deltaQ);
     // membershipVectorToFile(S, currentMatrixSize, MATLAB);
 
-    if (deltaQ < 0.1){ // if this isn't a good split
+    if (deltaQ < 0.1 || currentMatrixSize <= 1){ // if this isn't a good split
+        printf("Bad split!\n");
         community_t * community = (community_t *) malloc(sizeof(community_t));
         community->nextCommunity  = NULL;
         community->globalVertices = globalVertices;
         community->numNodes = currentMatrixSize;
+        free(B_gTimesS);
+        free(B_g);
+        free(S);
+        printf("\n");
         return community;
 
 
@@ -500,7 +548,7 @@ community_t* assignCommunity(double *restrict B, unsigned long currentMatrixSize
         //Todo: consider realloc'ing over-allocated blocks
 
         double *leftB = (double *)malloc(numLeft * numLeft * sizeof(double)); // Square matrix with the elements of B that correspond to values of -1 in S
-        double *rightB = (double *)malloc(numLeft * numLeft * sizeof(double)); // Square matrix with the elements of B that correspond to values of 1 in S
+        double *rightB = (double *)malloc(numRight * numRight * sizeof(double)); // Square matrix with the elements of B that correspond to values of 1 in S
 
         for (int i = 0; i < numLeft; i++){
             for (int j = 0; j < numLeft; j++)
@@ -516,20 +564,20 @@ community_t* assignCommunity(double *restrict B, unsigned long currentMatrixSize
             }
         }
 
-            printf("done\n");
+            // printf("done\n");
             // scep_conf = malloc(sizeof(*scep_conf)); /* cast unnecessary. */
 
         // willy_t *willyBBB = malloc(sizeof(willy_t));
         // free(willyBBB);
         community_t *leftCommunity = malloc(sizeof(struct community));
         community_t *rightCommunity = malloc(sizeof(struct community));
-
-        #pragma omp task shared(leftCommunity) 
+        printf("\n");
+// #pragma omp task shared(leftCommunity) 
             leftCommunity = assignCommunity(leftB, numLeft, originalMatrixSize, globalVerticesLeft, 2);
 
-        #pragma omp task shared(rightCommunity) 
+        // #pragma omp task shared(rightCommunity) 
             rightCommunity = assignCommunity(rightB, numRight, originalMatrixSize, globalVerticesRight, 2);
-        #pragma omp taskwait
+        // #pragma omp taskwait
         community_t* tmp = leftCommunity;
         while(tmp->nextCommunity != NULL)
         {
@@ -537,6 +585,17 @@ community_t* assignCommunity(double *restrict B, unsigned long currentMatrixSize
         }
 
         tmp->nextCommunity = rightCommunity;
+        free(leftIndices);
+        free(rightIndices);
+        // free(globalVerticesLeft);
+        // free(globalVerticesRight);
+        free(B_gTimesS);
+        free(B_g);
+
+        free(leftB);
+        free(S);
+
+        free(rightB);
         return leftCommunity;
 
 
@@ -579,7 +638,8 @@ community_t* assignCommunity(double *restrict B, unsigned long currentMatrixSize
     j = fib(n - 2);
 
 #pragma omp taskwait
-*/
+*/        
+
 
     // free(S);
 
@@ -591,18 +651,41 @@ community_t* assignCommunity(double *restrict B, unsigned long currentMatrixSize
 void computeSubgraphModularityMatrix(double *restrict B_g, double *restrict B, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices, int numThreads)
 {
     omp_set_num_threads(numThreads);
-#pragma omp parallel for
+// #pragma omp parallel for 
+/*
     for (int i = 0; i < currentMatrixSize; i++)
     {
         for (int j = 0; j < currentMatrixSize; j++)
         {
-            B_g[i * currentMatrixSize + j] = B[globalVertices[i] * originalMatrixSize + globalVertices[j]];
+            int iGlobal = globalVertices[i];
+            int jGlobal = globalVertices[j];
+            // printf("i: %d \t j: %d \t Bindex %ld \n", i, j, iGlobal * originalMatrixSize + jGlobal);
+
+            double Bval = B[iGlobal * currentMatrixSize + jGlobal];
+            B_g[i * currentMatrixSize + j] = Bval;
         }
     }
-    int i;
     // int n = currentMatrixSize;
-    double *Bsum = (double *)malloc(currentMatrixSize * sizeof(double)); // Sum each row of B and put it in here
+    */
+    memcpy(B_g, B, currentMatrixSize * currentMatrixSize * sizeof(double));
 
+    double *Bsum = (double *)malloc(currentMatrixSize * sizeof(double)); // Sum each row of B and put it in here
+    int i;
+    /*
+    for (int i = 0; i < currentMatrixSize; i++)
+    {
+        for (int j = 0; j < currentMatrixSize; j++)
+        {
+
+            double val = B_g[i * currentMatrixSize + j];
+            printf("Val at (%d, %d) is %f\n", i, j, val);
+            if (isnan(val) || val != val)
+            {
+                printf("We have a NaN at (%d, %d)", i, j);
+            }
+        }
+    }
+    */
 // double tmp;
 #pragma omp parallel for
     for (i = 0; i < currentMatrixSize; i++)
@@ -623,6 +706,7 @@ void computeSubgraphModularityMatrix(double *restrict B_g, double *restrict B, u
     {
         B_g[i * currentMatrixSize + i] -= Bsum[i];
     }
+    free(Bsum);
 }
 
 void createMembershipVector(double *restrict S, double *restrict newS, unsigned long currentMatrixSize)

@@ -1,0 +1,32 @@
+close all;
+clear all;
+clc;
+load('data/Module1Data');
+
+
+A = recon_adjacency_matrix; % redefine adajency_matrix as A so that it matches Newman's notation
+% A = jazzMat;
+degrees = sum(A');
+
+m = (sum(degrees))/2 ; % total number of edges in the network
+n = size(A, 1);
+
+K = degrees' * degrees;
+B = (A - K/(2*m));
+Q = 0;
+
+labels_fixed = metadata(1:500,1);
+labels2 = string(labels_fixed);
+
+[communities, label, Q] = assignCommunity(B, 0, [1:length(A)]);
+OutputNetwork(significant_correlation_reconstituted,labels2);
+Q = Q/(4*m);
+nodes = readtable('nodes.csv');
+nodes(:,3) = num2cell(communities');
+writetable(nodes,'nodes.csv','Delimiter',',','QuoteStrings',true);
+
+nodes.Properties.VariableNames = {'id' 'ticker' 'community'};
+sector_table.Properties.VariableNames = {'sector' 'n'};
+
+table_join = join(nodes, metadata_table);
+table_join = join(table_join, sector_table);
