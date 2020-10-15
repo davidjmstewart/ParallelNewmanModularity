@@ -293,6 +293,30 @@ void membershipVectorToFile(double *S, unsigned long size, enum OutputType outpu
 
 }
 
+void communitiesToFile(community_t *communities, enum OutputType outputType)
+{
+
+
+    if (outputType == MATLAB)
+    {
+        FILE *fp;
+        fp = fopen("./benchmarking/matlab_testing_files/matlab-communities.txt", "w");
+        community_t *tmp = communities;
+       
+        while (tmp != NULL)
+        {
+            for (int i = 0; i < tmp->numNodes; i++)
+            {
+                fprintf(fp, "%d ", tmp->globalVertices[i]);
+            }
+            fprintf(fp, "\n");
+            tmp = tmp->nextCommunity;
+        }
+
+        fclose(fp);
+    }
+}
+
 void matVectMultiply(double *restrict A, double *restrict V, double *restrict results, unsigned long matrixSize, int numThreads)
 {
     omp_set_num_threads(numThreads);
@@ -467,7 +491,7 @@ community_t* assignCommunity(double *restrict B, unsigned long currentMatrixSize
         }
     }
     */
-    eigenPair eigP = powerIteration(B_g, currentMatrixSize, numThreads, 0.0000000001, 5000);
+    eigenPair eigP = powerIteration(B_g, currentMatrixSize, numThreads, 0.00000000000001, 5000);
 
     double *S = (double *)malloc(currentMatrixSize * sizeof(double)); // Membership vector, referreld to as S in the paper
 

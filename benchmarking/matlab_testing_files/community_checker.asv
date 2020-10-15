@@ -1,10 +1,10 @@
 close all;
 clear all;
 clc;
-load('data/Module1Data');
+f = @(x)isequal(length(x), length(unique(x)))
+A = readmatrix('./integer-matrix-matlab-mat.txt'); % B_g matrix from the C implementation
 
-
-A = recon_adjacency_matrix; % redefine adajency_matrix as A so that it matches Newman's notation
+% A = recon_adjacency_matrix; % redefine adajency_matrix as A so that it matches Newman's notation
 % A = jazzMat;
 degrees = sum(A');
 
@@ -15,18 +15,27 @@ K = degrees' * degrees;
 B = (A - K/(2*m));
 Q = 0;
 
-labels_fixed = metadata(1:500,1);
-labels2 = string(labels_fixed);
-
 [communities, label, Q] = assignCommunity(B, 0, [1:length(A)]);
-OutputNetwork(significant_correlation_reconstituted,labels2);
 Q = Q/(4*m);
-nodes = readtable('nodes.csv');
 nodes(:,3) = num2cell(communities');
-writetable(nodes,'nodes.csv','Delimiter',',','QuoteStrings',true);
+communities
 
-nodes.Properties.VariableNames = {'id' 'ticker' 'community'};
-sector_table.Properties.VariableNames = {'sector' 'n'};
 
-table_join = join(nodes, metadata_table);
-table_join = join(table_join, sector_table);
+
+fid = fopen('matlab-communities.txt');
+tline = fgetl(fid);
+c = 0;
+while ischar(tline)
+    c_communities = str2num(tline);
+    matlab_communities = find(communities == c) - 1;
+    num_differences = numel(find(c_communities~=matlab_communities))
+    disp(tline)
+    tline = fgetl(fid);
+end
+
+for c = 0:label
+    find(communities == c) - 1
+end
+
+
+fclose(fid);

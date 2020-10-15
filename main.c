@@ -4,7 +4,7 @@
 
 #include "./lib/CDUTils.h"
 
-unsigned long const MATRIX_SIZE = 50;
+unsigned long const MATRIX_SIZE = 1000;
 const int NUM_THREADS = 2;
 long double elapsed;
 struct timespec start, finish;
@@ -47,24 +47,24 @@ int main(int argc, char *argv[])
     // matrixToFile(B, MATRIX_SIZE, Python);
     integerMatrixToFile(A, MATRIX_SIZE, MATLAB);
     printf("Performing power iteration \n");
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    eigenPair eigenPair = powerIteration(B, MATRIX_SIZE, NUM_THREADS, 0.000000001, 5000);
-    membershipVectorToFile(eigenPair.eigenvector, MATRIX_SIZE, MATLAB);
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-    printf("elapsed: %.9Lf \n", elapsed);
+
+
     // printf("%0.9f\n", eigenPair.eigenvalue);
     // membershipVectorToFile(eigenPair.eigenvector, MATRIX_SIZE, MATLAB);
     // membershipVectorToFile(eigenVector, MATRIX_SIZE, Python);
     int *globalVertices = (int *)malloc(MATRIX_SIZE * sizeof(int)); // Store the subgraph modularity matrix computed in parallel
     createGlobalVertices(globalVertices, MATRIX_SIZE, 4);
     community_t* comm;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    // eigenPair eigenPair = powerIteration(B, MATRIX_SIZE, NUM_THREADS, 0.00000000000001, 5000);
+    comm = assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
 
-// #pragma omp parallel shared(comm)
+    // membershipVectorToFile(eigenPair.eigenvector, MATRIX_SIZE, MATLAB);
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+    // #pragma omp parallel shared(comm)
     // {
-// #pragma omp single // we want a single thread to enter this initially
-        comm = assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
+    // #pragma omp single // we want a single thread to enter this initially
+    // comm = assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
     // }
     // free(comm);
 
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     free(D);
     free(B);
     free(globalVertices);
-
+    communitiesToFile(comm, MATLAB);
     community_t *tmp;
 
     while (comm != NULL)
@@ -92,7 +92,9 @@ int main(int argc, char *argv[])
         comm = comm->nextCommunity;
         free(tmp);
     }
-
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+    printf("elapsed: %.9Lf \n", elapsed);
     return 0;
 }
 

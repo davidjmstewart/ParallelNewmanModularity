@@ -15,6 +15,7 @@ benchmarking/vectorisation/missed.txt
 eigVecTest.c
 matlab-membershipvec.txt
 matlab-mat.txt
+matlab-communities.txt
 integer-matrix-matlab-mat.txt
 py-membershipvec.txt
 matlab-mat.txt
