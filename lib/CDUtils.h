@@ -3,6 +3,8 @@
 
 #define USE_DEFAULT_NUM_THREADS -1
 #define DEFAULT_NUM_THREADS 16
+#define MIN_MATRIX_TASK_SIZE 3000 // matrix must be at least this size in rows and columns before we use tasks to split up working on it
+#define PROBABILITY_OF_CONNECTION 30 // Probability that any two nodes are connected (used when generating adjacency graph)
 
 enum OutputType
 {
@@ -18,8 +20,9 @@ typedef struct eigenPair
 
 typedef struct community
 {
-    int numNodes;           // how many nodes are in this community
-    int *globalVertices; // global index of nodes that belong in this community
+    int numNodes;               // how many nodes are in this community
+    int *globalVertices;        // global index of nodes that belong in this community
+    double deltaQ;              // the change in modularity score made by this community
     struct community *nextCommunity;
 } community_t;
 

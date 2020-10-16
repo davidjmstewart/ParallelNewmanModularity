@@ -1,7 +1,7 @@
 function [labelled_vertices, label, deltaQ ] = assignCommunity(B, label, globalVertices)
 %assignCommunity Assigns all vertices in B to a community by using Newman's
 %modularity algorithm
-    THRESHOLD = 0.0001;
+    THRESHOLD = 0.1;
     OPTIMISATION_THRESHOLD = 1;
     
     ng = length(B);  % use this to construct the n_g x n_g subraph modualrity matrix (equation 6)

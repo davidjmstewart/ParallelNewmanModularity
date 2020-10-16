@@ -4,7 +4,7 @@
 
 #include "./lib/CDUTils.h"
 
-unsigned long const MATRIX_SIZE = 1000;
+unsigned long const MATRIX_SIZE = 3000;
 const int NUM_THREADS = 2;
 long double elapsed;
 struct timespec start, finish;
@@ -43,9 +43,9 @@ int main(int argc, char *argv[])
     printf("Creating modularity Matrix \n");
     createModularityMatrix(B, A, D, MATRIX_SIZE, NUM_THREADS);
     printf("Outputting matlab file\n");
-    matrixToFile(B, MATRIX_SIZE, MATLAB);
+    // matrixToFile(B, MATRIX_SIZE, MATLAB);
     // matrixToFile(B, MATRIX_SIZE, Python);
-    integerMatrixToFile(A, MATRIX_SIZE, MATLAB);
+    // integerMatrixToFile(A, MATRIX_SIZE, MATLAB);
     printf("Performing power iteration \n");
 
 
@@ -57,34 +57,36 @@ int main(int argc, char *argv[])
     community_t* comm;
     clock_gettime(CLOCK_MONOTONIC, &start);
     // eigenPair eigenPair = powerIteration(B, MATRIX_SIZE, NUM_THREADS, 0.00000000000001, 5000);
-    comm = assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
+    // comm = assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
 
     // membershipVectorToFile(eigenPair.eigenvector, MATRIX_SIZE, MATLAB);
-    clock_gettime(CLOCK_MONOTONIC, &finish);
+
     // #pragma omp parallel shared(comm)
     // {
     // #pragma omp single // we want a single thread to enter this initially
-    // comm = assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
+    comm = assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
     // }
-    // free(comm);
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+    free(comm);
 
     free(A);
     free(D);
     free(B);
     free(globalVertices);
     communitiesToFile(comm, MATLAB);
-    community_t *tmp;
 
+    
     while (comm != NULL)
     {
-        for (int i = 0; i < comm->numNodes; i++){
-            printf("%d ", comm->globalVertices[i]);
-        }
+        printf("Num nodes: %d \n", comm->numNodes);
+        // for (int i = 0; i < comm->numNodes; i++){
+        //     printf("%d ", comm->globalVertices[i]);
+        // }
         printf("\n");
         comm = comm->nextCommunity;
     }
 
-
+    /*
 
     while (comm != NULL)
     {
@@ -92,6 +94,7 @@ int main(int argc, char *argv[])
         comm = comm->nextCommunity;
         free(tmp);
     }
+    */
     elapsed = (finish.tv_sec - start.tv_sec);
     elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
     printf("elapsed: %.9Lf \n", elapsed);

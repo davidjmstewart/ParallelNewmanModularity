@@ -10,6 +10,7 @@ dotp
 *.exe
 sgmm
 membership_vector
+matrixTasking
 
 benchmarking/vectorisation/missed.txt
 eigVecTest.c

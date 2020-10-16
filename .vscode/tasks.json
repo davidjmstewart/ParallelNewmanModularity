@@ -141,6 +141,30 @@
             "cwd": "${workspaceFolder}"
           }
         },
+                {
+                  "label": "BuildMatrixVectorTaskingBencmark",
+                  "type": "shell",
+                  "command": "gcc",
+                  "args": [
+                    "-fopenmp",
+                    "./lib/CDUtils.o",
+                    "-g",
+                    "./benchmarking/tasking/matrixTasking.c",
+                    "-o",
+                    "./benchmarking/tasking/matrixTasking",
+                    "-lm",
+                    "-Wall",
+                    "-Wpedantic",
+                    "-Waggressive-loop-optimizations",
+                    // "-O3",
+                    // "-march=native",
+                    // "-funroll-loops",
+                    // "-fopt-info-vec-all",
+                  ],
+                  "options": {
+                    "cwd": "${workspaceFolder}"
+                  }
+                },
 {
       "label": "Build",
       "dependsOrder": "sequence",
