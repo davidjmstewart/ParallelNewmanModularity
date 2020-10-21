@@ -8,12 +8,12 @@
 
 #define N 40000 // Matrix size will be N x N
 #define T 1
-#define THREAD_RANGE 16 // Run for 1:THREAD_RANGE threads
-#define NUM_AVERAGES 50 // take the average of 5 timings for each matrix size, and each number of threads
-#define NUM_MATRIX_SIZES 10
+#define THREAD_RANGE 8 // Run for 1:THREAD_RANGE threads
+#define NUM_AVERAGES 500 // take the average of 5 timings for each matrix size, and each number of threads
+#define NUM_MATRIX_SIZES 8
 // unsigned long matrixSizes[NUM_MATRIX_SIZES] = {51200};
 
-unsigned long matrixSizes[NUM_MATRIX_SIZES] = { 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200 };
+unsigned long matrixSizes[NUM_MATRIX_SIZES] = {128, 256, 512, 1024, 2048, 4096, 8192, 16384};
 // unsigned long matrixSizes[NUM_MATRIX_SIZES] = {100000, 200000, 500000, 1000000, 2000000, 3000000, 5000000, 10000000, 20000000, 50000000};
 
 // unsigned long matrixSizes[NUM_MATRIX_SIZES] = { 51200 };
@@ -42,13 +42,11 @@ double doParallelComputation(double *restrict D, double *restrict A, unsigned lo
     omp_set_num_threads(numThreads);
     unsigned long i;
     double result = 0.0;
-#pragma omp parallel
-    {
-#pragma omp for simd reduction(+ \
-                               : result)
+
+    #pragma omp simd reduction(+:result)
         for (i = 0; i < matrixSize; i++)
             result += D[i] * A[i];
-    }
+    
     return result;
 
     /* COMPARE VS UNROLLED, NO THREADING WHICH IS FASTER

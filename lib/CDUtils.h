@@ -26,10 +26,6 @@ typedef struct community
     struct community *nextCommunity;
 } community_t;
 
-typedef struct smilly {
-    int test;
-} willy_t;
-
 // node for a linked list
 typedef struct node
 {

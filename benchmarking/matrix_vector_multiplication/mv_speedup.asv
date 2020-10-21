@@ -37,30 +37,26 @@ for i = 1:size(parallel_timings, 1)
     subplot(4,2,i); 
     hold on;
     grid on;
-grid minor;
 %     xlim([1 16]);
 %     ylim([0 6]);
     hold on;
-    c_par = plot(T, parallel_timings(i,:).^-1 * sequential_averages(i), 'LineWidth', 2);
-    p_par = plot(T, parallel_timings(i,:).^-1 * python_sequential_averages(i), 'LineWidth', 2);
-    hold off;
-    title(sprintf('%d element Vector',matrix_sizes(i)),'interpreter','latex','fontsize',12);
-    set(gca,'TickLabelInterpreter','latex')
+    plot(T, parallel_timings(i,:).^-1 * sequential_averages(i), 'LineWidth', 2);
+    plot(T, parallel_timings(i,:).^-1 * python_sequential_averages(i), 'LineWidth', 2);
+    legend('Speedup (relative to sequential C)','Speedup (relative to sequential Python)','Cache blocking (64)', 'Cache blocking (128)')
 
+    hold off;
+    title(sprintf('%d element Vector',matrix_sizes(i)));
 end
 
-hL = legend([c_par,p_par],{'Speedup (relative to sequential C)','Speedup (relative to sequential Python)'},'interpreter','latex','fontsize',12);
 handle=axes(fig,'visible','off'); 
 handle.XLabel.Visible='on';
-handle.XLabel.Interpreter = 'latex';
-
-
 handle.YLabel.Visible='on';
 handle.Title.Visible='on';
-ylabel(handle,'Speedup','interpreter','latex','fontsize',16);
-xlabel(handle,'Number of threads','interpreter','latex','fontsize',16);
-title(handle,'\textbf{Speedup of parallelising Matrix-Vector multiplication with OpenMP threads}','interpreter','latex','fontsize',12);
+ylabel(handle,'Speedup');
+xlabel(handle,'Number of threads');
+title(handle,'Speedup of parallelising Matrix-Vector multiplication with OpenMP threads');
 handle.Title.Position(2) = 1.05
+grid on;
 
 
 
@@ -69,18 +65,28 @@ handle.Title.Position(2) = 1.05
 fig = figure;
 % matrix_sizes = [1000000, 2000000, 3000000, 4000000];
 
-parallel_timings_simd = [
-0.000103773  0.000832113  0.000845967  0.000542320  0.000819707  0.001177120  0.002609780  0.003318793;
-0.000036107  0.000985560  0.000550040  0.000759460  0.000961893  0.001192100  0.001726460  0.003313367;
-0.000142293  0.000614207  0.000967287  0.000890600  0.000740060  0.001457260  0.002874053  0.002970927;
-0.000559207  0.000560133  0.000936607  0.001128687  0.001466100  0.001778240  0.003020340  0.003458947;
-0.002810820  0.002225607  0.001941380  0.001715787  0.001862553  0.003023380  0.004615793  0.004897660;
-0.010836700  0.007781313  0.006945493  0.006026313  0.006113440  0.005878860  0.006390147  0.007121860;
-0.036621093  0.025393027  0.021168053  0.019912653  0.019434240  0.019027033  0.019665740  0.020057827;
-0.143174393  0.102118080  0.087503013  0.078300853  0.074452900  0.071914560  0.073481580  0.077631493;]
+parallel_timings = [
+0.000010780  0.001213853  0.000700620  0.000531727  0.001014840  0.001894100  0.003385093  0.003305047;
+0.000072493  0.000648393  0.000909480  0.000689327  0.001166607  0.001915480  0.001989407  0.002939240;
+0.000154920  0.000875100  0.000653807  0.000567353  0.001051973  0.002173927  0.002981953  0.003643033;
+0.000570080  0.000860513  0.001066533  0.001277613  0.001419800  0.002049967  0.003021807  0.004088453;
+0.002805927  0.002175187  0.002056867  0.002032300  0.002047713  0.002429267  0.003589160  0.004090240;
+0.009819700  0.007735113  0.006803533  0.006205500  0.005708320  0.005898000  0.006725513  0.007175547;
+0.040862287  0.028971113  0.024414847  0.023130907  0.021988480  0.020599980  0.022283733  0.024249400;
+0.155414673  0.106772853  0.089861900  0.087946433  0.081009887  0.079680100  0.082918053  0.079510880; ]
 
 T = [1: 8];
 
+python_sequential_averages = [
+9.509999999998686e-06, 
+4.537000000000013e-05,
+0.0005918900000000005,
+0.001877289999999998,
+0.0071921899999999985,
+0.027735839999999977,
+0.1011943800000001,
+0.4075684999999993
+];
 
 parallel_timings_with_cache_block_64 = [
     
@@ -127,36 +133,28 @@ for i = 1:size(parallel_timings, 1)
     subplot(4,2,i); 
     hold on;
     grid on;
-    grid minor;
 %     xlim([1 16]);
 %     ylim([0 6]);
     hold on;
-    c_par_simd = plot(T, parallel_timings_simd(i,:).^-1 * sequential_averages(i), 'LineWidth', 2);
-    p_par_simd = plot(T, parallel_timings_simd(i,:).^-1 * python_sequential_averages(i), 'LineWidth', 2);
-    
-    c_par = plot(T, parallel_timings(i,:).^-1 * sequential_averages(i), 'LineWidth', 2);
-    p_par = plot(T, parallel_timings(i,:).^-1 * python_sequential_averages(i), 'LineWidth', 2);
-%     plot(T, parallel_timings_with_cache_block_64(i,:).^-1 * sequential_averages(i), 'LineWidth', 2);
-%     plot(T, parallel_timings_with_cache_block_128(i,:).^-1 * sequential_averages(i), 'LineWidth', 2);
-%     plot(T, parallel_timings_with_cache_block_256(i,:).^-1 * sequential_averages(i), 'LineWidth', 2);
+    plot(T, parallel_timings(i,:).^-1 * sequential_averages(i), 'LineWidth', 2);
+    plot(T, parallel_timings(i,:).^-1 * python_sequential_averages(i), 'LineWidth', 2);
+    plot(T, parallel_timings_with_cache_block_64(i,:).^-1 * sequential_averages(i), 'LineWidth', 2);
+    plot(T, parallel_timings_with_cache_block_128(i,:).^-1 * sequential_averages(i), 'LineWidth', 2);
+    plot(T, parallel_timings_with_cache_block_256(i,:).^-1 * sequential_averages(i), 'LineWidth', 2);
 
-%     legend('Speedup compared to sequential C implementation','Speedup compared to sequential Python implementation','Cache blocking (64)', 'Cache blocking (128)')
+    legend('Speedup compared to sequential C implementation','Speedup compared to sequential Python implementation','Cache blocking (64)', 'Cache blocking (128)')
 
     hold off;
-    title(sprintf('%d element Vector',matrix_sizes(i)),'interpreter','latex','fontsize',12);
-    set(gca,'TickLabelInterpreter','latex')
+    title(sprintf('%d element Vector',matrix_sizes(i)));
 end
 
-hL = legend([c_par_simd, p_par_simd, c_par,p_par],{'Speedup with SIMD (relative to sequential C)','Speedup  with SIMD (relative to sequential Python)','Speedup without SIMD (relative to sequential C)','Speedup without SIMD (relative to sequential Python)'},'interpreter','latex','fontsize',12);
 handle=axes(fig,'visible','off'); 
 handle.XLabel.Visible='on';
-handle.XLabel.Interpreter = 'latex';
-
-
 handle.YLabel.Visible='on';
 handle.Title.Visible='on';
-ylabel(handle,'Speedup','interpreter','latex','fontsize',16);
-xlabel(handle,'Number of threads','interpreter','latex','fontsize',16);
-title(handle,'\textbf{Speedup of parallelising Matrix-Vector multiplication with OpenMP threads \& SIMD support}','interpreter','latex','fontsize',12);
+ylabel(handle,'Speedup');
+xlabel(handle,'Number of threads');
+title(handle,'Speedup of parallelising Matrix-Vector multiplication with OpenMP threads and SIMD support');
 handle.Title.Position(2) = 1.05
+grid on;
 

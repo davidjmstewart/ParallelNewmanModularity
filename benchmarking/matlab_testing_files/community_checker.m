@@ -16,7 +16,7 @@ B = (A - K/(2*m));
 Q = 0;
 tic
 [communities, label, Q] = assignCommunity(B, 0, [1:length(A)]);
-Q = Q/(4*m);
+Q = Q/(4*m)
 toc;
 nodes(:,3) = num2cell(communities');
 communities;

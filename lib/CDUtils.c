@@ -339,18 +339,14 @@ eigenPair powerIteration(double *B, unsigned long size, int numThreads, double t
     double prevEigenValue = __INT_MAX__;
     double norm = 0;
 
-    omp_set_num_threads(numThreads);
+    
     bool converged = false;
     int numIterations = 0;
     while (!converged && numIterations < iterationLimit)
     {
-
         int k;
-
         matVectMultiply(B, eigenVectorTmp, eigenVector, size, numThreads);
-
         norm = 0;
-        // double max = (eigenVector[0]);
         #pragma omp parallel for private(k) reduction(+:norm)
         for (k = 0; k < size; k++)
         {
@@ -361,18 +357,20 @@ eigenPair powerIteration(double *B, unsigned long size, int numThreads, double t
         {
             eigenVectorTmp[k] = eigenVector[k] / sqrt(norm);
         }
+        
         eigenValue = rayleighQuotient(B, eigenVector, size, numThreads);
         double diff = fabs(eigenValue - prevEigenValue);
         if (diff < tolerance)
         {
-            printf("converged after %d iterations \n", numIterations);
+            // printf("converged after %d iterations, matrix size: %ld\n", numIterations, size);
             converged = true;
         }
 
         prevEigenValue = eigenValue;
         numIterations++;
+        
+        // numIterations++;
     }
-    // double eigenValue = rayleighQuotient(B, eigenVector, size);
 
     // N.B. This is not part of the typical power iteration algorithm
     // this is specifically for our purposes of finding the eigenvector
@@ -382,15 +380,13 @@ eigenPair powerIteration(double *B, unsigned long size, int numThreads, double t
     //     * https://math.stackexchange.com/questions/835450/efficient-method-for-determining-to-the-most-positive-eigenvalue-of-a-matrix
     //     * https://math.stackexchange.com/questions/906563/finding-eigenvectors-for-the-largest-eigenvalue-vs-one-with-the-largest-absolute
 
-    
+    // double eigenValue = rayleighQuotient(B, eigenVector, size, numThreads);
     if (eigenValue < 0) {
-      
-
         double *newB = (double *)malloc(size * size * sizeof(double));
 
         memcpy(newB, B, size * size * sizeof(double));
         for (int i = 0; i < size; i++){
-            newB[i * size + i] += fabs(eigenValue); // todo: change this, it is mutating our original B
+            newB[i * size + i] += fabs(eigenValue); 
         }
         free(eigenVectorTmp);
         free(eigenVector);
@@ -401,17 +397,14 @@ eigenPair powerIteration(double *B, unsigned long size, int numThreads, double t
         return eigP;
         
     } else {
-        // printf("eigenvalue is %f\n", eigenValue);
         eigP.eigenvalue = eigenValue;
         eigP.eigenvector = eigenVector;
         return eigP;
-        // return eigenVector;
     }
     eigP.eigenvalue = eigenValue;
     eigP.eigenvector = eigenVector;
     free(eigenVectorTmp);
     return eigP;
-    // return eigenVector;
 }
 
 void createGlobalVertices(int *restrict globalVertices, unsigned long matrixSize, int numThreads)
@@ -503,6 +496,7 @@ community_t* assignCommunity(double *restrict B, unsigned long currentMatrixSize
             printf("Tasking left!");
         } else {
             leftCommunity = assignCommunity(leftB, numLeft, originalMatrixSize, globalVerticesLeft, 2);
+            leftCommunity->deltaQ = deltaQ;
         }
 
         if (numRight > MIN_MATRIX_TASK_SIZE)
@@ -515,6 +509,7 @@ community_t* assignCommunity(double *restrict B, unsigned long currentMatrixSize
         else
         {
             rightCommunity = assignCommunity(rightB, numRight, originalMatrixSize, globalVerticesRight, 2);
+            rightCommunity->deltaQ = deltaQ;
         }
 
         #pragma omp taskwait

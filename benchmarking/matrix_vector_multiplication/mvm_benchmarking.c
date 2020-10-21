@@ -10,14 +10,10 @@
 
 #define N 40000 // Matrix size will be N x N
 #define T 1
-#define THREAD_RANGE 16 // Run for 1:THREAD_RANGE threads
-#define NUM_AVERAGES 10 // take the average of 5 timings for each matrix size, and each number of threads
-#define NUM_MATRIX_SIZES 6
-// unsigned long matrixSizes[NUM_MATRIX_SIZES] = {51200};
-
-unsigned long matrixSizes[NUM_MATRIX_SIZES] = { 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200 };
-// unsigned long matrixSizes[NUM_MATRIX_SIZES] = {100000, 200000, 500000, 1000000, 2000000, 3000000, 5000000, 10000000, 20000000, 50000000};
-
+#define THREAD_RANGE 8 // Run for 1:THREAD_RANGE threads
+#define NUM_AVERAGES 15 // take the average of 5 timings for each matrix size, and each number of threads
+#define NUM_MATRIX_SIZES 8
+unsigned long matrixSizes[NUM_MATRIX_SIZES] = {128, 256, 512, 1024, 2048, 4096, 8192, 16384};
 // unsigned long matrixSizes[NUM_MATRIX_SIZES] = { 51200 };
 
 double sequentialTimings[NUM_MATRIX_SIZES];
@@ -45,35 +41,60 @@ void doSequentialComputation(double *restrict A, double *restrict V, double *res
     }
 }
 
-void doParallelComputation(double *restrict A, double *restrict V, double *restrict results, unsigned long matrixSize, int numThreads)
+void doParallelComputation(double *restrict M, double *restrict V, double *restrict results, unsigned long matrixSize, int numThreads)
 {
-
     omp_set_num_threads(numThreads);
-    const int BLOCK_SIZE = 20;
+    unsigned long i, j;
+#pragma omp parallel for private(j)
+    for (i = 0; i < matrixSize; i++)
+    {
+        double tmp = 0;
+        double *MHead = &M[i * matrixSize];
+
+#pragma omp
+        for (j = 0; j < matrixSize; j++)
+        {
+            //results[i] += A[i * matrixSize + j] * V[j];
+            tmp += MHead[j] * V[j];
+            // tmp += MHead[j + 1] * V[j + 1];
+            // tmp += MHead[j + 2] * V[j + 2];
+            // tmp += MHead[j  + 3] * V[j  + 3];
+        }
+        results[i] = tmp; // write-only to results, not adding to old value.
+    }
+
+    /*
+    omp_set_num_threads(numThreads);
+    const int BLOCK_SIZE = 256;
     int i, j, x, y;
     int n = matrixSize;
-    #pragma omp parallel for private(j, x, y)
+#pragma omp parallel for private(j, x, y)
     for (i = 0; i < n; i += BLOCK_SIZE)
     {
         for (int nn = 0; nn < BLOCK_SIZE; nn++)
         {
             results[i + nn] = 0;
         }
-
+        int xmin = (i + BLOCK_SIZE < n ? i + BLOCK_SIZE : n);
         for (j = 0; j < n; j += BLOCK_SIZE)
         {
-
-            for (x = i; x < fmin(i + BLOCK_SIZE, n); x++)
+            int ymin = (j + BLOCK_SIZE < n ? j + BLOCK_SIZE : n);
+            for (x = i; x < xmin; x++)
             {
-                #pragma omp simd
-                for (y = j; y < (int)fmin(j + BLOCK_SIZE, n); y++)
+                double tmp = 0;
+                double *MHead = &M[x * matrixSize];
+#pragma omp simd reduction(+ \
+                           : tmp)
+                for (y = j; y < ymin; y++)
                 {
-                    results[x] += A[x*matrixSize + y] * V[y];
+                    tmp += MHead[y] * V[y];
                 }
+                results[x] += tmp;
             }
         }
     }
     
+*/
 }
 void genRandVector(double *S, unsigned long size)
 {
@@ -125,9 +146,7 @@ int main(int argc, char *argv[])
         double *parV = (double *)malloc(matrixSize * sizeof(double)); // Parallel computed vector
 
         double *A = (double *)malloc(matrixSize * matrixSize * sizeof(double)); // Matrix to multiply by V
-
-
-
+        
         genRandVector(V, matrixSize);
         genRandMatrix(A, matrixSize);
 

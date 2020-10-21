@@ -11,6 +11,7 @@ dotp
 sgmm
 membership_vector
 matrixTasking
+eigenvector_benchmarking
 
 benchmarking/vectorisation/missed.txt
 eigVecTest.c

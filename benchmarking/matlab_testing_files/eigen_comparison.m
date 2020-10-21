@@ -23,3 +23,5 @@ if (~S_vecs_same)
     sprintf('Not equal! Total differences:  %d', differences)
 end
 deltaQ
+
+
