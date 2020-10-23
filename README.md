@@ -26,3 +26,9 @@ The program will place the communities file in `./benchmarking/matlab_testing_fi
 ```
 
 Each line is a community. 
+
+# Testing larger networks
+
+Random adjacency matrices can be generated. Open `main.c` and find: `    // uncomment if you wish to randomly generate a network to analyze`
+
+This section of code contains the code necessary to allocate space for an adjacency matrix and fill it (using `genAdjacencyMatrix`). Don't forget to change `MATRIX_SIZE` above `main()`. 
