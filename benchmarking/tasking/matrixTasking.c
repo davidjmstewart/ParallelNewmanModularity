@@ -15,7 +15,7 @@
 #define NUM_MATRIX_SIZES 8
 // unsigned long matrixSizes[NUM_MATRIX_SIZES] = {51200};
 
-unsigned long matrixSizes[NUM_MATRIX_SIZES] = {100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200};
+unsigned long matrixSizes[NUM_MATRIX_SIZES] = {128, 256, 512, 1024, 2048, 4096, 8192, 16384};
 // unsigned long matrixSizes[NUM_MATRIX_SIZES] = {100000, 200000, 500000, 1000000, 2000000, 3000000, 5000000, 10000000, 20000000, 50000000};
 
 // unsigned long matrixSizes[NUM_MATRIX_SIZES] = { 51200 };
@@ -52,7 +52,7 @@ void matrixVectorMultiplicationSequential(double *restrict M, double *restrict V
 void matrixVectorMultiplicationParallel(double *restrict M, double *restrict V, double *restrict results, unsigned long matrixSize, int numThreads)
 {
 
-    /*
+    
     omp_set_num_threads(numThreads);
     unsigned long i, j;
 
@@ -71,9 +71,9 @@ void matrixVectorMultiplicationParallel(double *restrict M, double *restrict V, 
         }
         results[i] = tmp; // write-only to results, not adding to old value.
     }
-*/
 
-    
+
+    /*
     omp_set_num_threads(numThreads);
     const int BLOCK_SIZE = 10;
     int i, j, x, y;
@@ -103,7 +103,7 @@ void matrixVectorMultiplicationParallel(double *restrict M, double *restrict V, 
         }
     }
 
-    
+    */
 }
 
 void doParallelComputation(double *restrict A, double *restrict B, double *restrict V, double *restrict resultsA, double *restrict resultsB, unsigned long matrixSize, int numThreads)

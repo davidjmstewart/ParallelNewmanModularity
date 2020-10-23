@@ -39,6 +39,7 @@ typedef struct node
 void genAdjacencyMatrix(int *A, unsigned long size);
 
 void communitiesToFile(community_t *communities, enum OutputType outputType);
+void vectorToFile(double *S, unsigned long size, enum OutputType outputType);
 
 // Creates a vector that stores the degree of each node in A
 // Takes a (size x size) adjacency matrix A (e.g. one made with genAdjacencyMatrix())

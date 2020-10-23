@@ -13,7 +13,9 @@
 #define THREAD_RANGE 8 // Run for 1:THREAD_RANGE threads
 #define NUM_AVERAGES 15 // take the average of 5 timings for each matrix size, and each number of threads
 #define NUM_MATRIX_SIZES 8
+// unsigned long matrixSizes[NUM_MATRIX_SIZES] = {128, 256, 512, 1024, 2048, 4096, 8192, 16384};
 unsigned long matrixSizes[NUM_MATRIX_SIZES] = {128, 256, 512, 1024, 2048, 4096, 8192, 16384};
+
 // unsigned long matrixSizes[NUM_MATRIX_SIZES] = { 51200 };
 
 double sequentialTimings[NUM_MATRIX_SIZES];
@@ -40,9 +42,16 @@ void doSequentialComputation(double *restrict A, double *restrict V, double *res
         results[i] = tmp;
     }
 }
+int min(int x, int y) 
+{
+    return (x < y) ? x : y;
+} 
+
+
 
 void doParallelComputation(double *restrict M, double *restrict V, double *restrict results, unsigned long matrixSize, int numThreads)
 {
+    
     omp_set_num_threads(numThreads);
     unsigned long i, j;
 #pragma omp parallel for private(j)
@@ -51,7 +60,7 @@ void doParallelComputation(double *restrict M, double *restrict V, double *restr
         double tmp = 0;
         double *MHead = &M[i * matrixSize];
 
-#pragma omp
+#pragma omp simd reduction(+:tmp)
         for (j = 0; j < matrixSize; j++)
         {
             //results[i] += A[i * matrixSize + j] * V[j];
@@ -65,9 +74,10 @@ void doParallelComputation(double *restrict M, double *restrict V, double *restr
 
     /*
     omp_set_num_threads(numThreads);
-    const int BLOCK_SIZE = 256;
+    const int BLOCK_SIZE = 64;
     int i, j, x, y;
     int n = matrixSize;
+    
 #pragma omp parallel for private(j, x, y)
     for (i = 0; i < n; i += BLOCK_SIZE)
     {
@@ -87,14 +97,33 @@ void doParallelComputation(double *restrict M, double *restrict V, double *restr
                            : tmp)
                 for (y = j; y < ymin; y++)
                 {
+
                     tmp += MHead[y] * V[y];
                 }
                 results[x] += tmp;
             }
         }
     }
-    
-*/
+    */
+   /*
+    int i, j, x, y;
+    for (i = 0; i < n; i += 2)
+    {
+        results[i] = 0;
+        results[i + 1] = 0;
+        for (j = 0; j < n; j += 2)
+        {
+            for (x = i; x < min(i + 2, n); x++)
+            {
+                for (y = j; y < min(j + 2, n); y++)
+                {
+                    printf("C[%d] = C[%d] + A[%d][%d] * b[%d] \n", x, x, x, y, y);
+                    results[x] = results[x] + M[x * matrixSize + y] * V[y];
+                }
+            }
+        }
+    }
+    */
 }
 void genRandVector(double *S, unsigned long size)
 {
@@ -138,7 +167,7 @@ int main(int argc, char *argv[])
     }
 
     for (int m = 0; m < NUM_MATRIX_SIZES; m++){
-
+        printf("Doing %d \n", matrixSizes[m]);
         unsigned long matrixSize = matrixSizes[m]; //
 
         double *V = (double *)malloc(matrixSize * sizeof(double));

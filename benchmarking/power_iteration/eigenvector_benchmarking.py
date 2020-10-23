@@ -9,10 +9,12 @@ NUM_AVERAGES = 10
 
 average_timings = []
 print("Started!")
-matrix_sizes = [128, 256, 512, 1024, 2048, 4096]
-def time_computation(size, num_averages):
-    A = np.random.rand(size, size)
+matrix_sizes = [128, 256]
 
+
+def time_computation(size, num_averages):
+    # A = np.random.rand(size, size)
+    A = np.random.randint(100, size=(size,size))
     def closure():
         return  LA.eig(A)
 
@@ -32,3 +34,5 @@ for i, size in enumerate(matrix_sizes):
     average_timings.append(size_avg)
 
 print(average_timings)
+
+

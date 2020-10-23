@@ -8,23 +8,19 @@
 #include <omp.h>
 #include <assert.h>
 #include "../../lib/CDUtils.h"
-#define N 40000 // Matrix size will be N x N
-#define T 1
-#define THREAD_RANGE 16 // Run for 1:THREAD_RANGE threads
-#define NUM_AVERAGES 10 // take the average of 5 timings for each matrix size, and each number of threads
+
+
+#define THREAD_RANGE 8 // Run for 1:THREAD_RANGE threads
+#define NUM_AVERAGES 20 // take the average of 5 timings for each matrix size, and each number of threads
 #define NUM_MATRIX_SIZES 8
 // unsigned long matrixSizes[NUM_MATRIX_SIZES] = {51200};
 const double EQUALITY_THRESHOLD = 0.1;
-unsigned long matrixSizes[NUM_MATRIX_SIZES] = {100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200};
-// unsigned long matrixSizes[NUM_MATRIX_SIZES] = {100000, 200000, 500000, 1000000, 2000000, 3000000, 5000000, 10000000, 20000000, 50000000};
-
-// unsigned long matrixSizes[NUM_MATRIX_SIZES] = { 51200 };
+unsigned long matrixSizes[NUM_MATRIX_SIZES] = {128, 256, 512, 1024, 2048, 4096, 8192, 16384};
 
 double sequentialTimings[NUM_MATRIX_SIZES];
 double parallelTimings[NUM_MATRIX_SIZES][THREAD_RANGE];
 
 //gcc -fopenmp -g ./benchmarking/matrix_vector_multiplication/mvm_benchmarking.c -o ./benchmarking/matrix_vector_multiplication/mvm ./lib/CDUtils.o -lm -Wall -Wpedantic -Waggressive-loop-optimizations -O3 -march=native -fopt-info-vec-missed=v.txt
-// #pragma GCC option("arch=native", "tune=native", "no-zero-upper") //Enable AVX
 #pragma GCC target("avx") //Enable AVX
 
 void doSequentialComputation(double *restrict B_g, double *restrict B, unsigned long currentMatrixSize, unsigned long originalMatrixSize, int *globalVertices)
@@ -54,7 +50,6 @@ void doSequentialComputation(double *restrict B_g, double *restrict B, unsigned 
             tmp += Bhead[j];
         }
         Bsum[i] = tmp;
-        // printf("%.4f\n", Bsum[i]);
     }
 
     // #pragma omp parallel for private(j)
@@ -91,6 +86,8 @@ void doParallelComputation(double *restrict B_g, double *restrict B, unsigned lo
         double *Bhead;
         Bhead = &B_g[i * currentMatrixSize];
         double tmp = 0;
+        // #pragma omp simd reduction(+ \
+        //                         : tmp)
         for (int j = 0; j < currentMatrixSize; j++)
         {
             tmp += Bhead[j];
@@ -103,13 +100,6 @@ void doParallelComputation(double *restrict B_g, double *restrict B, unsigned lo
     for (i = 0; i < currentMatrixSize; i++)
     {
         B_g[i * currentMatrixSize + i] -= Bsum[i];
-    }
-}
-
-void createGlobalVertices(int *restrict globalVertices, unsigned long matrixSize, int numThreads)
-{
-    for (int i = 0; i < matrixSize; i++){
-        globalVertices[i] = i;
     }
 }
 

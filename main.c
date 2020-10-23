@@ -4,23 +4,68 @@
 
 #include "./lib/CDUTils.h"
 
-unsigned long const MATRIX_SIZE = 1000;
-const int NUM_THREADS = 4;
+unsigned long const MATRIX_SIZE = 34;
+const int NUM_THREADS = 1;
 long double elapsed;
 struct timespec start, finish;
+//gcc -fopenmp -g main.c -o main ./lib/CDUtils.o -lm -Wall -Werror -Wpedantic -Waggressive-loop-optimizations -O3 -march=native
 
 int main(int argc, char *argv[])
 {
-    int *A  = (int *)malloc(MATRIX_SIZE * MATRIX_SIZE * sizeof(int));   // our initial adjacency matrix that describes the graph
-    double *B = (double *)malloc(MATRIX_SIZE * MATRIX_SIZE * sizeof(double)); // Modularity matrix
-
-    int *D = (int *)malloc(MATRIX_SIZE * sizeof(int));
-
-    if (A == NULL) 
+    // adjacency graph of Zachary's Karate Network
+    int A[34 * 34] = {
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+        1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+        1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0,
+        1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1,
+        0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+        1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+        0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+        1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+        1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1,
+        0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+        0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1,
+        0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1,
+        0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0,
+    };
+    // uncomment if you wish to randomly generate a network to analyze
+    // int *A  = (int *)malloc(MATRIX_SIZE * MATRIX_SIZE * sizeof(int));   // our initial adjacency matrix that describes the graph
+    /*
+    if (A == NULL)
     {
         printf("Could not allocate %lu bytes to A. Exiting program\n", MATRIX_SIZE * MATRIX_SIZE * sizeof(int));
         return -1;
     }
+    */
+    // printf("Generating %lu x %lu adjacency matrix \n", MATRIX_SIZE, MATRIX_SIZE);
+    // genAdjacencyMatrix(A, MATRIX_SIZE);
+    // printf("Outputting adjacency matrix to disk\n");
+    // integerMatrixToFile(A, MATRIX_SIZE, MATLAB);
+    // integerMatrixToFile(A, MATRIX_SIZE, Python);
+    double *B = (double *)malloc(MATRIX_SIZE * MATRIX_SIZE * sizeof(double)); // Modularity matrix
+
+    int *D = (int *)malloc(MATRIX_SIZE * sizeof(int));
 
     if (B == NULL)
     {
@@ -34,69 +79,27 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    printf("Generating %lu x %lu adjacency matrix \n", MATRIX_SIZE, MATRIX_SIZE);
-    genAdjacencyMatrix(A, MATRIX_SIZE);
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
     printf("Creating degree vector \n");
     createDegreesVec(A, D, MATRIX_SIZE, NUM_THREADS);
 
-    printf("Creating modularity Matrix \n");
+    // printf("Creating modularity Matrix \n");
     createModularityMatrix(B, A, D, MATRIX_SIZE, NUM_THREADS);
-    printf("Outputting matlab file\n");
-    matrixToFile(B, MATRIX_SIZE, MATLAB);
+
+    // printf("Outputting modularity matrix\n");
+    // matrixToFile(B, MATRIX_SIZE, MATLAB);
     // matrixToFile(B, MATRIX_SIZE, Python);
-    integerMatrixToFile(A, MATRIX_SIZE, MATLAB);
-    printf("Performing power iteration \n");
 
-
-    // printf("%0.9f\n", eigenPair.eigenvalue);
-    // membershipVectorToFile(eigenPair.eigenvector, MATRIX_SIZE, MATLAB);
-    // membershipVectorToFile(eigenVector, MATRIX_SIZE, Python);
-    int *globalVertices = (int *)malloc(MATRIX_SIZE * sizeof(int)); // Store the subgraph modularity matrix computed in parallel
+    int *globalVertices = (int *)malloc(MATRIX_SIZE * sizeof(int)); 
     createGlobalVertices(globalVertices, MATRIX_SIZE, 4);
-    community_t* comm;
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    // eigenPair eigP = powerIteration(B, MATRIX_SIZE, NUM_THREADS, 0.000000001, 6000);
-    comm = assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
-
-    // membershipVectorToFile(eigP.eigenvector, MATRIX_SIZE, MATLAB);
-
-    // #pragma omp parallel shared(comm)
-    // {
-    // #pragma omp single // we want a single thread to enter this initially
-    // comm = assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
-    // }
-    // clock_gettime(CLOCK_MONOTONIC, &finish);
-    // free(comm);
-
-    free(A);
-    //
+    community_t *comm = assignCommunity(B, MATRIX_SIZE, MATRIX_SIZE, globalVertices, NUM_THREADS);
+    
     free(B);
     free(globalVertices);
-    communitiesToFile(comm, MATLAB);
-    community_t *tmp = comm;
-    double Q = 0;
-    int m = 0;
-    for (int i = 0; i < MATRIX_SIZE; i++){
-        m += D[i];
-    }
-        while (tmp != NULL)
-        {
-            Q += tmp->deltaQ;
-            tmp = tmp->nextCommunity;
-        }
-    
-    /*
 
-    while (comm != NULL)
-    {
-        tmp = comm;
-        comm = comm->nextCommunity;
-        free(tmp);
-    }
-    */
-
-    printf("Q: %f \n", Q/(4*m));
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+    communitiesToFile(comm, MATLAB); // output the communities to a text file so that it can be compared against another implementation
     elapsed = (finish.tv_sec - start.tv_sec);
     elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
     printf("elapsed: %.9Lf \n", elapsed);

@@ -8,31 +8,26 @@
 #include <omp.h>
 #include <assert.h>
 #include <string.h>
-#define N 40000 // Matrix size will be N x N
-#define T 1
+
+#include "../../lib/CDUtils.h";
+
 #define THREAD_RANGE 8 // Run for 1:THREAD_RANGE threads
-#define NUM_AVERAGES 20 // take the average of 5 timings for each matrix size, and each number of threads
+#define NUM_AVERAGES 10 // take the average of 5 timings for each matrix size, and each number of threads
 #define NUM_MATRIX_SIZES 6
 #define ITERATION_LIMIT 6000
-#include "../../lib/CDUtils.h";
-// unsigned long matrixSizes[NUM_MATRIX_SIZES] = {51200};
 
-// unsigned long matrixSizes[NUM_MATRIX_SIZES] = {64, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200};
-// unsigned long matrixSizes[NUM_MATRIX_SIZES] = {100000, 200000, 500000, 1000000, 2000000, 3000000, 5000000, 10000000, 20000000, 50000000};
 unsigned long matrixSizes[NUM_MATRIX_SIZES] = {128, 256, 512, 1024, 2048, 4096, 8192, 16384};
-// unsigned long matrixSizes[NUM_MATRIX_SIZES] = { 51200 };
 
 double sequentialTimings[NUM_MATRIX_SIZES];
 double parallelTimings[NUM_MATRIX_SIZES][THREAD_RANGE];
-const double TOLERANCE = 0.000000001;
+const double TOLERANCE = 0.0001;
+
 //gcc -fopenmp -g ./benchmarking/matrix_vector_multiplication/mvm_benchmarking.c -o ./benchmarking/matrix_vector_multiplication/mvm ./lib/CDUtils.o -lm -Wall -Wpedantic -Waggressive-loop-optimizations -O3 -march=native -fopt-info-vec-missed=v.txt
-// #pragma GCC option("arch=native", "tune=native", "no-zero-upper") //Enable AVX
+
 #pragma GCC target("avx")                                         //Enable AVX
 
-// todo: parallelise
 double seqDotProduct(double *A, double *x, unsigned long size)
 {
-    // double *y = (double *)malloc(size * sizeof(double));
     double sum = 0;
     int i;
 
@@ -70,8 +65,6 @@ double seqRayleighQuotient(double *B, double *eigenVector, unsigned long size)
     return e;
 }
 
-
-
 eigenPair seqPowerIteration(double *B, unsigned long size, double tolerance, int iterationLimit)
 {
     double *eigenVectorTmp = (double *)malloc(size * sizeof(double));
@@ -90,7 +83,6 @@ eigenPair seqPowerIteration(double *B, unsigned long size, double tolerance, int
     bool converged = false;
     int numIterations = 0;
     while (!converged && numIterations < iterationLimit)
-    // while (numIterations < iterationLimit)
     {
 
         int k;
@@ -98,7 +90,6 @@ eigenPair seqPowerIteration(double *B, unsigned long size, double tolerance, int
         seqMatVectMultiply(B, eigenVectorTmp, eigenVector, size);
 
         norm = 0;
-// double max = (eigenVector[0]);
 
         for (k = 0; k < size; k++)
         {
@@ -111,7 +102,6 @@ eigenPair seqPowerIteration(double *B, unsigned long size, double tolerance, int
         }
         eigenValue = seqRayleighQuotient(B, eigenVector, size);
         
-        // eigenValue = rayleighQuotient(B, eigenVector, size, numThreads);
         double diff = fabs(eigenValue - prevEigenValue);
         if (diff < tolerance)
         {
@@ -121,8 +111,6 @@ eigenPair seqPowerIteration(double *B, unsigned long size, double tolerance, int
 
         prevEigenValue = eigenValue;
         numIterations++;
-        
-        // numIterations++;
     }
     // double eigenValue = rayleighQuotient(B, eigenVector, size);
 
@@ -172,56 +160,17 @@ eigenPair seqPowerIteration(double *B, unsigned long size, double tolerance, int
 eigenPair doSequentialComputation(double *B, unsigned long size, double tolerance, int iterationLimit)
 {
     return seqPowerIteration(B, size, tolerance, iterationLimit);
-
 }
 
 eigenPair doParallelComputation(double *B, unsigned long size, int numThreads, double tolerance, int iterationLimit)
 {
-
-    return powerIteration(B, size, numThreads, tolerance, iterationLimit);
-
-
-
-
-/*
-    omp_set_num_threads(numThreads);
-    const int BLOCK_SIZE = 256;
-    int i, j, x, y;
-    int n = matrixSize;
-#pragma omp parallel for private(j, x, y)
-    for (i = 0; i < n; i += BLOCK_SIZE)
-    {
-        for (int nn = 0; nn < BLOCK_SIZE; nn++)
-        {
-            results[i + nn] = 0;
-        }
-        int xmin = (i + BLOCK_SIZE < n ? i + BLOCK_SIZE : n);
-        for (j = 0; j < n; j += BLOCK_SIZE)
-        {
-            int ymin = (j + BLOCK_SIZE < n ? j + BLOCK_SIZE : n);
-            for (x = i; x < xmin; x++)
-            {
-                double tmp = 0;
-                double *MHead = &M[x * matrixSize];
-#pragma omp simd reduction(+ \
-                           : tmp)
-                for (y = j; y < ymin; y++)
-                {
-                    tmp += MHead[y] * V[y];
-                }
-                results[x] += tmp;
-            }
-        }
-    }
-    
-*/
-    
+    return powerIteration(B, size, numThreads, tolerance, iterationLimit);    
 }
 void genRandVector(double *S, unsigned long size)
 {
     srand(time(0));
     unsigned long i;
-#pragma omp parallel for private(i)
+    #pragma omp parallel for private(i)
     for (i = 0; i < size; i++)
     {
         double n = rand() % 3;
@@ -233,16 +182,15 @@ void genRandMatrix(double *A, unsigned long size)
 {
     srand(time(0));
     unsigned long i, j;
-        for (i = 0; i < size; i++)
+    for (i = 0; i < size; i++)
+    {
+        for (j = 0; j < size; j++)
         {
-            for (j = 0; j < size; j++)
-            {
-                double n = rand() % 3;
-                A[i*size + j] = n;
-            }
-
+            double n = rand() % 100;
+            A[i*size + j] = n;
         }
     }
+}
 
 int main(int argc, char *argv[])
 {
@@ -262,18 +210,28 @@ int main(int argc, char *argv[])
 
         unsigned long matrixSize = matrixSizes[m]; //
 
-        double *V = (double *)malloc(matrixSize * sizeof(double));
+        // double *V = (double *)malloc(matrixSize * sizeof(double));
         double *seqV = (double *)malloc(matrixSize * sizeof(double)); // Sequentially computed vector
         double *parV = (double *)malloc(matrixSize * sizeof(double)); // Parallel computed vector
 
-        double *A = (double *)malloc(matrixSize * matrixSize * sizeof(double)); // Matrix to multiply by V
-        
-        genRandVector(V, matrixSize);
-        genRandMatrix(A, matrixSize);
+        // double *A = (double *)malloc(matrixSize * matrixSize * sizeof(double)); // Matrix to multiply by V
+        int *adjacencyMatrix  = (int *)malloc(matrixSize * matrixSize * sizeof(int));   // our initial adjacency matrix that describes the graph
+        int *D = (int *)malloc(matrixSize * sizeof(int));
+        double *B = (double *)malloc(matrixSize * matrixSize * sizeof(double)); // Modularity matrix
+
+
+        genAdjacencyMatrix(adjacencyMatrix, matrixSize);
+        createDegreesVec(adjacencyMatrix, D, matrixSize, 1);
+
+        createModularityMatrix(B, adjacencyMatrix, D, matrixSize, 1);
+        // genRandVector(V, matrixSize);
+        // genRandMatrix(A, matrixSize);
+
+        printf("Doing %d \n", matrixSize);
 
         for (int a = 0; a < NUM_AVERAGES; a++) {
             clock_gettime(CLOCK_MONOTONIC, &start);
-            eigenPair eigPairSequential = doSequentialComputation(A, matrixSize, TOLERANCE, ITERATION_LIMIT);
+            eigenPair eigPairSequential = doSequentialComputation(B, matrixSize, TOLERANCE, ITERATION_LIMIT);
             clock_gettime(CLOCK_MONOTONIC, &finish);
             elapsed = (finish.tv_sec - start.tv_sec);
             elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
@@ -282,13 +240,15 @@ int main(int argc, char *argv[])
             {
                 clock_gettime(CLOCK_MONOTONIC, &start);
 
-                eigenPair eigPairParallel = doParallelComputation(A, matrixSize, t, TOLERANCE, ITERATION_LIMIT);
-                // printf("Seq: %f \t Par: %f \n", eigPairSequential.eigenvalue, eigPairParallel.eigenvalue);
+                eigenPair eigPairParallel = doParallelComputation(B, matrixSize, t, TOLERANCE, ITERATION_LIMIT);
+                printf("Seq: %f \t Par: %f \n", eigPairSequential.eigenvalue, eigPairParallel.eigenvalue);
                 clock_gettime(CLOCK_MONOTONIC, &finish);
+                
                 elapsed = (finish.tv_sec - start.tv_sec);
                 elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+                // printf("Took %.9f seconds for %ld elements \n", elapsed, matrixSize);
                 parallelTimings[m][t - 1] += elapsed;
-                assert(fabs(eigPairParallel.eigenvalue - eigPairSequential.eigenvalue) < 0.1);
+                // assert(fabs(eigPairParallel.eigenvalue - eigPairSequential.eigenvalue) < 5);
                 // for (int i = 0; i < matrixSize; i++)
                 // {
                 //     assert(seqV[i] == parV[i]);
@@ -297,8 +257,9 @@ int main(int argc, char *argv[])
         }
         free(seqV);
         free(parV);
-        free(A);
-        free(V);
+        free(B);
+        free(D);
+        free(adjacencyMatrix);
     }
 
     for (int m = 0; m < NUM_MATRIX_SIZES; m++){
@@ -329,7 +290,6 @@ int main(int argc, char *argv[])
         
     }
     printf("\n");
-
 
     return 0;
 }

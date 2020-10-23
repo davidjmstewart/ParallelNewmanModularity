@@ -144,5 +144,26 @@
                     ],
                     "preLaunchTask": "BuildPowerIterationBenchmark"
                 },
+            {
+                "name": "(gdb) Community Detection (Benchmark)",
+                "type": "cppdbg",
+                "request": "launch",
+                "program": "${workspaceFolder}/benchmarking/community_detection/community_detection",
+                "args": [],
+                "stopAtEntry": false,
+                "cwd": "${workspaceFolder}",
+                "environment": [],
+                "externalConsole": false,
+                "MIMode": "gdb",
+                "setupCommands": [
+                    {
+                        "description": "Enable pretty-printing for gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": true
+                    }
+                ],
+                "preLaunchTask": "BuildCommunityDetectionBenchmark"
+            },
+
 ]
 }
